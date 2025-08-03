@@ -1,0 +1,39 @@
+variable "docker_network_homelab" {
+  description = "Docker network configuration for homelab"
+  type = object({
+    name    = string
+    driver  = string
+    options = map(string)
+    ipam_config = object({
+      subnet  = string
+      gateway = string
+    })
+  })
+  default = {
+    name   = "homelab"
+    driver = "macvlan"
+    options = {
+      parent = "enpls0f0"
+    }
+    ipam_config = {
+      subnet  = ""
+      gateway = ""
+    }
+  }
+}
+variable "docker_host" {
+  description = "Docker host URI"
+  type        = string
+  default     = "unix:///var/run/docker.sock"
+}
+
+variable "docker_images" {
+  description = "List of Docker images to be built"
+  type        = list(object({
+    name        = string
+    tag        = string
+    keep_locally = bool
+    context     = string
+    dockerfile  = string
+  }))
+}

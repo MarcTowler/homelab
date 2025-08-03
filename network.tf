@@ -2,7 +2,7 @@ resource "docker_network" "homelab_network" {
   name = "homelab"
   driver = "macvlan"
 
-  driver_opts = {
+  options = {
     parent = "enpls0f0"
   }
 

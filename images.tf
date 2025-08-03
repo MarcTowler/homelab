@@ -1,9 +1,10 @@
-resource "docker_image" "bind9_image" {
-    name = "bind9:latest"
-    keep_locally = false
+resource "docker_image" "image" {
+    for_each = var.docker_images
+    name = "${each.value.name}:${each.value.tag}"
+    keep_locally = each.value.keep_locally
 
     build {
-        context    = "${path.module}/bind9"
-        dockerfile = "Dockerfile"
+        context    = data.http.image_pull[each.value.name].url
+        dockerfile = each.value.dockerfile
     }
 }
