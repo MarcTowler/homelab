@@ -1,13 +1,13 @@
 resource "docker_network" "homelab_network" {
-  name = "homelab"
-  driver = "macvlan"
+  name   = var.docker_network_homelab.name
+  driver = var.docker_network_homelab.driver
 
   options = {
-    parent = "enpls0f0"
+    parent = var.docker_network_homelab.options.parent
   }
 
   ipam_config {
-    subnet = "192.168.0.0/20"
-    gateway = "192.168.1.254"
+    subnet  = var.docker_network_homelab.ipam_config.subnet
+    gateway = var.docker_network_homelab.ipam_config.gateway
   }
 }

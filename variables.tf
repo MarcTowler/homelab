@@ -21,19 +21,16 @@ variable "docker_network_homelab" {
     }
   }
 }
-variable "docker_host" {
-  description = "Docker host URI"
-  type        = string
-  default     = "unix:///var/run/docker.sock"
-}
 
 variable "docker_images" {
   description = "List of Docker images to be built"
-  type        = list(object({
-    name        = string
-    tag        = string
+  type = list(object({
+    name         = string
+    tag          = string
     keep_locally = bool
-    context     = string
-    dockerfile  = string
+    context      = string
+    dockerfile   = optional(string, null)
+    remote_repo  = optional(string, null)
+    static_ip  = optional(string, null)
   }))
 }
