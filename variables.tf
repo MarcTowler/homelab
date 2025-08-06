@@ -31,6 +31,21 @@ variable "docker_images" {
     context      = string
     dockerfile   = optional(string, null)
     remote_repo  = optional(string, null)
-    static_ip  = optional(string, null)
+    static_ip    = optional(string, null)
   }))
+}
+
+variable "docker_containers" {
+  description = "List of Docker containers to be created"
+  type = list(object({
+    name           = string
+    image          = string
+    restart_policy = optional(string, "always")
+    ports          = optional(map(string), {})
+    environment    = optional(map(string), {})
+    volumes        = optional(list(string), [])
+    networks       = optional(list(string), [])
+    static_ip      = optional(string, null)
+  }))
+  default = []
 }
