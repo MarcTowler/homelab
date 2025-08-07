@@ -45,6 +45,7 @@ variable "docker_containers" {
     environment    = optional(map(string), {})
     volumes        = optional(list(string), [])
     networks       = optional(list(string), [])
+    network_mode  = optional(list(string), null)
     static_ip      = optional(string, null)
   }))
   default = []
