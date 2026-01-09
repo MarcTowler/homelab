@@ -1,52 +1,60 @@
-variable "docker_network_homelab" {
-  description = "Docker network configuration for homelab"
-  type = object({
-    name    = string
-    driver  = string
-    options = map(string)
-    ipam_config = object({
-      subnet  = string
-      gateway = string
-    })
-  })
-  default = {
-    name   = "homelab"
-    driver = "macvlan"
-    options = {
-      parent = "enpls0f0"
-    }
-    ipam_config = {
-      subnet  = ""
-      gateway = ""
-    }
-  }
+variable "proxmox_api_url" {
+  description = "The URL of the Proxmox API endpoint."
+  type        = string
 }
 
-variable "docker_images" {
-  description = "List of Docker images to be built"
-  type = list(object({
-    name         = string
-    tag          = string
-    keep_locally = bool
-    context      = string
-    dockerfile   = optional(string, null)
-    remote_repo  = optional(string, null)
-    static_ip    = optional(string, null)
-  }))
+variable "proxmox_user" {
+  description = "The username for Proxmox API authentication."
+  type        = string
 }
 
-variable "docker_containers" {
-  description = "List of Docker containers to be created"
-  type = list(object({
-    name           = string
-    image          = string
-    restart_policy = optional(string, "always")
-    ports          = optional(map(string), {})
-    environment    = optional(map(string), {})
-    volumes        = optional(list(string), [])
-    networks       = optional(list(string), [])
-    network_mode  = optional(list(string), null)
-    static_ip      = optional(string, null)
-  }))
-  default = []
+variable "proxmox_password" {
+  description = "The password for Proxmox API authentication."
+  type        = string
+  sensitive   = true
+}
+
+variable "proxmox_tls_insecure" {
+  description = "Disable TLS certificate verification."
+  type        = bool
+  default     = false
+}
+
+variable "cluster_nodes" {
+    description = "Proxmox Cluster Node Names"
+    type        = list(string)
+    default     = ["arcanine", "growlithe", "fuecoco"]
+}
+
+variable "vms" {
+    description = "VM Specifications to create"
+    type        = map(object({
+        node           = string
+        vmid           = number
+        name           = string
+        cores          = number
+        memory         = number
+        disk_size      = number
+        iso_image      = string
+        network_bridge = string
+        clone          = optional(string)
+        ip_address     = string
+    }))
+    default = {}
+}
+
+variable "containers" {
+    description = "LXC Container Specifications to create"
+    type        = map(object({
+        node           = string
+        vmid           = number
+        name           = string
+        cores          = number
+        memory         = number
+        disk_size      = number
+        template       = string
+        network_bridge = string
+        ip_address     = string
+    }))
+    default = {}
 }

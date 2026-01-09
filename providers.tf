@@ -1,17 +1,15 @@
 terraform {
   required_providers {
-    docker = {
-      source  = "kreuzwerker/docker"
-      version = ">= 3.6.2"
-    }
-
-    http = {
-      source  = "hashicorp/http"
-      version = ">= 3.5.0"
+    proxmox = {
+      source  = "bpg/proxmox"
+      version = ">= 0.91.0"
     }
   }
 }
 
-provider "docker" {
-  host = "unix:///var/run/docker.sock"
+provider "proxmox" {
+  pm_api_url      = var.proxmox_api_url
+  pm_user         = var.proxmox_user
+  pm_password     = var.proxmox_password
+  pm_tls_insecure = var.proxmox_tls_insecure
 }
