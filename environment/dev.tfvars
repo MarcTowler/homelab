@@ -1,4 +1,4 @@
-vms = {
+/* vms = {
   database = {
     cores      = 2
     memory     = 2048
@@ -20,3 +20,16 @@ containers = {
 
 environment = "dev"
 template_vm_id = 9000
+ */
+
+node                = "arcanine"
+#pve_ssh_key_private = "~/.ssh/terraform_id_ed25519"
+
+## Image Variables
+image_filename           = "jammy-server-cloudimg-amd64.img"
+image_url                = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
+
+## VM Variables
+vm_id   = 9012
+vm_name = "ubuntu-jammy"
+bios    = "seabios"

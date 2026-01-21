@@ -5,7 +5,7 @@ resource "proxmox_virtual_environment_vm" "this" {
   node_name = each.value.node
 
   clone {
-    vm_id = proxmox_virtual_environment_vm.ubuntu_template.id
+    vm_id = proxmox_virtual_environment_vm.vm_template.id
   }
 
   agent {
@@ -27,5 +27,5 @@ resource "proxmox_virtual_environment_vm" "this" {
     }
   }
 
-  depends_on = [ proxmox_virtual_environment_download_file.ubuntu_cloud_image ]
+  depends_on = [ proxmox_virtual_environment_download_file.image ]
 }
