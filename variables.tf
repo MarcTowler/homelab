@@ -22,6 +22,19 @@ variable "proxmox_password" {
   sensitive   = true
 }
 
+variable "terraform_user" {
+  description = "The username for Terraform operations."
+  type        = string
+  sensitive   = true
+  default     = "terraform"
+}
+
+variable "terraform_password" {
+  description = "The password for Terraform operations."
+  type        = string
+  sensitive   = true
+}
+
 variable "proxmox_tls_insecure" {
   description = "Disable TLS certificate verification."
   type        = bool
@@ -96,12 +109,7 @@ variable "datastore_id" {
   default     = "local"
 }
 
-## Proxmox SSH Variables
-variable "pve_user" {
-  description = "Proxmox username"
-  type        = string
-  sensitive   = true
-}
+
 
 variable "pve_ssh_key_private" {
   description = "File path to private SSH key for PVE - overrides 'pve_password'"

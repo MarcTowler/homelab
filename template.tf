@@ -99,7 +99,7 @@ resource "proxmox_virtual_environment_download_file" "image" {
 #  checksum_algorithm = var.image_checksum_algorithm
   overwrite          = false
 
-  lifecycle {
+  /* lifecycle {
     prevent_destroy = true
-  }
+  } */
 }
