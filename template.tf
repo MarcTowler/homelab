@@ -42,7 +42,7 @@ resource "proxmox_virtual_environment_vm" "vm_template" {
     file_format  = "raw"
     cache        = "writeback"
     iothread     = false
-    ssd          = true
+    ssd          = false
     discard      = "on"
   }
 
@@ -83,9 +83,9 @@ resource "proxmox_virtual_environment_file" "vendor_data" {
       EOF
   }
 
-  lifecycle {
+  /* lifecycle {
     prevent_destroy = true
-  }
+  } */
 }
 
 

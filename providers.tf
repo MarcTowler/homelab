@@ -14,8 +14,8 @@ provider "proxmox" {
   ssh {
     agent = true
     username = var.terraform_user
-    password = var.terraform_password
-    #private_key = file(var.pve_ssh_key_private)
+    #password = var.terraform_password
+    private_key = file(var.pve_ssh_key_private)
 
     node {
       name = var.node

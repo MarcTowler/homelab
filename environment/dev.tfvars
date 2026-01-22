@@ -29,6 +29,6 @@ image_filename           = "jammy-server-cloudimg-amd64.img"
 image_url                = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
 
 ## VM Variables
-vm_id   = 9012
+vm_id   = 9000
 vm_name = "ubuntu-jammy"
 bios    = "seabios"
