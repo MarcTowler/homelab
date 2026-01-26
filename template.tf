@@ -74,9 +74,22 @@ resource "proxmox_virtual_environment_file" "vendor_data" {
     file_name = "vendor-data.yaml"
     data      = <<-EOF
       #cloud-config
+      users:
+        - default
+        - name: ubuntu
+          groups:
+            - sudo
+          shell: /bin/bash
+          sudo: ALL=(ALL) NOPASSWD:ALL
+      package_update: true
       packages:
         - qemu-guest-agent
-      package_update: true
+        - net-tools
+        - curl
+      runcmd:
+        - systemctl enable qemu-guest-agent
+        - systemctl start qemu-guest-agent
+        - echo "done" > /tmp/cloud-config.done
       power_state:
         mode: reboot
         timeout: 30
