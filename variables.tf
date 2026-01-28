@@ -10,6 +10,13 @@ variable "proxmox_user" {
   sensitive   = true
 }
 
+variable "root" {
+  description = "The root username for Proxmox API authentication."
+  type        = string
+  sensitive   = true
+  default     = "root"
+}
+
 variable "proxmox_api_token" {
   description = "The API token for Proxmox API authentication."
   type        = string
@@ -88,6 +95,7 @@ variable "vms" {
 variable "containers" {
   description = "LXC Container Specifications to create"
   type = map(object({
+    lxc_id     = number
     cores      = number
     memory     = number
     node       = string
@@ -125,13 +133,24 @@ variable "node" {
 }
 
 ## Image Variables
-variable "image_filename" {
+variable "vm_image_filename" {
   description = "Filename, default `null` will extract name from URL."
   type        = string
   default     = null
 }
 
-variable "image_url" {
+variable "vm_image_url" {
+  description = "Image URL."
+  type        = string
+}
+
+variable "ct_image_filename" {
+  description = "Filename, default `null` will extract name from URL."
+  type        = string
+  default     = null
+}
+
+variable "ct_image_url" {
   description = "Image URL."
   type        = string
 }
