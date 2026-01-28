@@ -209,3 +209,29 @@ variable "roles" {
   }))
   default = []
 }
+
+variable "nodes" {
+  description = "List of Proxmox nodes and details"
+  type = map(object({
+    node_name  = string
+    ip_address = string
+  }))
+  default = {}
+}
+
+variable "domain_name" {
+  description = "The domain name for the environemnt"
+  type        = string
+}
+
+#Cloudflare
+variable "cloudflare_dns_token" {
+  description = "Cloudflare DNS API Token for ACME DNS challenge"
+  type        = string
+  sensitive   = true
+}
+
+variable "acme_email" {
+  description = "Email address for ACME account registration"
+  type        = string
+}

@@ -24,7 +24,7 @@ resource "proxmox_virtual_environment_container" "this" {
 
     ip_config {
       ipv4 {
-        address = "${each.value.ip_address}/30"
+        address = "${each.value.ip_address}"
         gateway = "192.168.1.254"
       }
     }
