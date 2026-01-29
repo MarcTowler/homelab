@@ -20,7 +20,7 @@ resource "proxmox_virtual_environment_container" "this" {
 
 
   initialization {
-    hostname = each.key
+    hostname = "${each.key}.${var.domain_name}"
 
     ip_config {
       ipv4 {
