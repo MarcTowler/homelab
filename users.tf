@@ -7,8 +7,8 @@
 #   groups      = each.value.groups
 #   email       = each.value.email
 # }
-resource "proxmox_virtual_environment_user" "terraform" {
-  comment  = "Managed by Terraform"
-  password = var.proxmox_password
-  user_id  = var.proxmox_user
-}
+# resource "proxmox_virtual_environment_user" "terraform" {
+#   comment  = "Managed by Terraform"
+#   password = var.proxmox_password
+#   user_id  = var.proxmox_user
+# }
