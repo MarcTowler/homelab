@@ -16,6 +16,14 @@ containers = {
     node       = "arcanine"
     image      = "ubuntu-22.04-standard"
     ip_address = "192.168.1.160/24"
+  },
+  api = {
+    lxc_id     = 1001
+    cores      = 2
+    memory     = 4098
+    node       = "arcanine"
+    image      = "ubuntu-22.04-standard"
+    ip_address = "192.168.1.161/24"
   }
 }
 
