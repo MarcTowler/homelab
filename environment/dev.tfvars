@@ -24,12 +24,27 @@ containers = {
     node       = "arcanine"
     image      = "ubuntu-22.04-standard"
     ip_address = "192.168.1.161/24"
-  }
+  },
+  gapi = {
+    lxc_id     = 1002
+    cores      = 2
+    memory     = 4098
+    node       = "arcanine"
+    image      = "ubuntu-22.04-standard"
+    ip_address = "192.168.1.162/24"
+  },
+  site = {
+    lxc_id     = 1003
+    cores      = 2
+    memory     = 4098
+    node       = "arcanine"
+    image      = "ubuntu-22.04-standard"
+    ip_address = "192.168.1.163/24"
+  },
 }
 
 environment = "dev"
 template_vm_id = 9000
-template_lxc_id = 9500
 
 nodes = {
   arcanine = {
