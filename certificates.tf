@@ -2,7 +2,7 @@
 resource "proxmox_virtual_environment_acme_dns_plugin" "cloudflare" {
   api    = "cf"
   plugin = "cloudflare"
-  
+
   data = {
     CF_Token = var.cloudflare_dns_token
   }

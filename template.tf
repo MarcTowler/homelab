@@ -103,14 +103,14 @@ resource "proxmox_virtual_environment_file" "vendor_data" {
 
 
 resource "proxmox_virtual_environment_download_file" "image" {
-  node_name          = var.node
-  content_type       = "iso"
-  datastore_id       = "local"
-  file_name          = var.vm_image_filename
-  url                = var.vm_image_url
-#  checksum           = var.image_checksum
-#  checksum_algorithm = var.image_checksum_algorithm
-  overwrite          = false
+  node_name    = var.node
+  content_type = "iso"
+  datastore_id = "local"
+  file_name    = var.vm_image_filename
+  url          = var.vm_image_url
+  #  checksum           = var.image_checksum
+  #  checksum_algorithm = var.image_checksum_algorithm
+  overwrite = false
 
   /* lifecycle {
     prevent_destroy = true

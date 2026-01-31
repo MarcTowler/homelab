@@ -13,13 +13,13 @@ provider "proxmox" {
   username = "root@pam"
   password = var.terraform_password
   ssh {
-    agent = true
+    agent    = true
     username = var.root
     password = var.terraform_password
     #private_key = file(var.pve_ssh_key_private)
 
     node {
-      name = var.node
+      name    = var.node
       address = "192.168.1.150"
     }
   }

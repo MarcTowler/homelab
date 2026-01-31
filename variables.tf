@@ -191,10 +191,10 @@ variable "bios" {
 variable "users" {
   description = "List of users to create on the VM."
   type = list(object({
-    password    = string
-    comment     = optional(string, null)
-    groups      = optional(list(string), [])
-    email       = optional(string, null)
+    password = string
+    comment  = optional(string, null)
+    groups   = optional(list(string), [])
+    email    = optional(string, null)
   }))
   default = []
 }
@@ -202,10 +202,10 @@ variable "users" {
 variable "roles" {
   description = "List of roles to create on the Proxmox server."
   type = list(object({
-    role_name      = string
-    role_id        = string
-    comment        = optional(string, null)
-    privileges     = list(string)
+    role_name  = string
+    role_id    = string
+    comment    = optional(string, null)
+    privileges = list(string)
   }))
   default = []
 }
