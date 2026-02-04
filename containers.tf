@@ -1,5 +1,5 @@
 resource "proxmox_virtual_environment_container" "this" {
-  for_each = var.containers
+  for_each    = var.containers
   description = "${each.key} - Managed by Terraform"
 
   node_name = each.value.node
@@ -24,7 +24,7 @@ resource "proxmox_virtual_environment_container" "this" {
 
     ip_config {
       ipv4 {
-        address = "${each.value.ip_address}"
+        address = each.value.ip_address
         gateway = var.gateway
       }
     }
@@ -50,7 +50,7 @@ resource "proxmox_virtual_environment_container" "this" {
     template_file_id = proxmox_virtual_environment_download_file.lxc-image.id
     # Or you can use a volume ID, as obtained from a "pvesm list <storage>"
     # template_file_id = "local:vztmpl/jammy-server-cloudimg-amd64.tar.gz"
-    type             = "ubuntu"
+    type = "ubuntu"
   }
 
   mount_point {
@@ -62,7 +62,7 @@ resource "proxmox_virtual_environment_container" "this" {
 
   mount_point {
     # volume mount, an existing volume will be mounted
-    volume = "local-lvm"#:subvol-disk-${each.value.lxc_id}"
+    volume = "local-lvm" #:subvol-disk-${each.value.lxc_id}"
     size   = "10G"
     path   = "/mnt/data"
   }
@@ -79,14 +79,14 @@ resource "proxmox_virtual_environment_container" "this" {
 }
 
 resource "proxmox_virtual_environment_download_file" "lxc-image" {
-  node_name          = var.node
-  content_type       = "vztmpl"
-  datastore_id       = "local"
-  file_name          = var.ct_image_filename
-  url                = var.ct_image_url
-#  checksum           = var.image_checksum
-#  checksum_algorithm = var.image_checksum_algorithm
-  overwrite          = false
+  node_name    = var.node
+  content_type = "vztmpl"
+  datastore_id = "local"
+  file_name    = var.ct_image_filename
+  url          = var.ct_image_url
+  #  checksum           = var.image_checksum
+  #  checksum_algorithm = var.image_checksum_algorithm
+  overwrite = false
 }
 
 resource "random_password" "ubuntu_container_password" {

@@ -28,5 +28,5 @@ resource "proxmox_virtual_environment_vm" "this" {
     }
   }
 
-  depends_on = [ proxmox_virtual_environment_download_file.image ]
+  depends_on = [proxmox_virtual_environment_download_file.image]
 }
