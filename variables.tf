@@ -63,7 +63,7 @@ variable "environment" {
 variable "gateway" {
   description = "Default network gateway"
   type        = string
-  default     = "192.168.1.254"
+  default     = "10.10.1.1"
 }
 
 variable "template_vm_id" {
