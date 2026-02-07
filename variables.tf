@@ -63,7 +63,7 @@ variable "environment" {
 variable "gateway" {
   description = "Default network gateway"
   type        = string
-  default     = "10.10.1.1"
+  default     = "10.0.1.1"
 }
 
 variable "template_vm_id" {
@@ -87,7 +87,6 @@ variable "vms" {
     disk_size  = number
     node       = string
     clone      = optional(string, "ubuntu-22-04-template")
-    ip_address = string
   }))
   default = {}
 }
@@ -100,7 +99,6 @@ variable "containers" {
     memory     = number
     node       = string
     image      = string
-    ip_address = string
   }))
   default = {}
 }

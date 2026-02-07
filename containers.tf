@@ -20,11 +20,12 @@ resource "proxmox_virtual_environment_container" "this" {
 
 
   initialization {
-    hostname = "${each.key}.${var.domain_name}"
+    hostname = "${each.key}"
 
     ip_config {
       ipv4 {
-        address = each.value.ip_address
+        address = "dhcp"
+        #address = each.value.ip_address
         gateway = var.gateway
       }
     }
@@ -34,6 +35,11 @@ resource "proxmox_virtual_environment_container" "this" {
         trimspace(tls_private_key.ubuntu_container_key.public_key_openssh)
       ]
       password = random_password.ubuntu_container_password.result
+    }
+
+    dns {
+      domain  = var.domain_name
+      servers = [var.gateway]
     }
   }
 
