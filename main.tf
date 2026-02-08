@@ -30,3 +30,16 @@ resource "proxmox_virtual_environment_time" "node_time" {
   node_name = each.value.node_name
   time_zone = "UTC"
 }
+
+#Set the Node DNS
+resource "proxmox_virtual_environment_dns" "node_dns" {
+  for_each = var.nodes
+
+  node_name = each.value.node_name
+  servers   = [
+    var.gateway,
+    "8.8.8.8",
+    "1.1.1.1"
+  ]
+  domain    = var.domain_name
+}
