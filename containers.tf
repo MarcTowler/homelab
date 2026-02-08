@@ -24,8 +24,7 @@ resource "proxmox_virtual_environment_container" "this" {
 
     ip_config {
       ipv4 {
-        address = "dhcp"
-        #address = each.value.ip_address
+        address = each.value.ip_address
         gateway = var.gateway
       }
     }

@@ -87,6 +87,7 @@ variable "vms" {
     disk_size  = number
     node       = string
     clone      = optional(string, "ubuntu-22-04-template")
+    ip_address = string
   }))
   default = {}
 }
@@ -99,6 +100,7 @@ variable "containers" {
     memory     = number
     node       = string
     image      = string
+    ip_address = string
   }))
   default = {}
 }

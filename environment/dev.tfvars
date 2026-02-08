@@ -33,6 +33,7 @@ containers = {
     cores      = 2
     memory     = 2048
     node       = "arcanine"
+    ip_address = "dhcp"
     image      = "ubuntu-22.04-standard"
   },
   api = {
@@ -40,6 +41,7 @@ containers = {
     cores      = 2
     memory     = 4098
     node       = "arcanine"
+    ip_address = "dhcp"
     image      = "ubuntu-22.04-standard"
   },
   gapi = {
@@ -47,6 +49,7 @@ containers = {
     cores      = 2
     memory     = 4098
     node       = "arcanine"
+    ip_address = "dhcp"
     image      = "ubuntu-22.04-standard"
   },
   site = {
@@ -54,6 +57,7 @@ containers = {
     cores      = 2
     memory     = 4098
     node       = "arcanine"
+    ip_address = "dhcp"
     image      = "ubuntu-22.04-standard"
   },
 }

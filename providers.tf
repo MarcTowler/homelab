@@ -20,7 +20,7 @@ provider "proxmox" {
 
     node {
       name    = var.node
-      address = "10.0.1.150"
+      address = var.nodes[var.node].ip_address
     }
   }
 }
