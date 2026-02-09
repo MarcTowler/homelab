@@ -60,14 +60,14 @@ containers = {
     ip_address = "dhcp"
     image      = "ubuntu-22.04-standard"
   },
-  traefik = {
-    lxc_id     = 1004
-    cores      = 2
-    memory     = 4098
-    node       = "growlithe"
-    ip_address = "dhcp"
-    image      = "ubuntu-22.04-standard"
-  }
+  #traefik = {
+  #  lxc_id     = 1004
+  #  cores      = 2
+  #  memory     = 4098
+  #  node       = "growlithe"
+  #  ip_address = "dhcp"
+  #  image      = "ubuntu-22.04-standard"
+  #}
 }
 
 template_vm_id = 9000
