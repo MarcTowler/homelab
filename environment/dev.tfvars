@@ -79,7 +79,7 @@ acme_email     = "marc@marctowler.co.uk"
 vm_image_filename           = "ubuntu-25.04-server-cloudimg-amd64.img"
 vm_image_url                = "https://cloud-images.ubuntu.com/releases/plucky/release/ubuntu-25.04-server-cloudimg-amd64.img"
 ct_image_filename           = "rootfs.tar.xz"
-ct_image_url                = "https://images.linuxcontainers.org/images/ubuntu/jammy/amd64/default/20260126_07:42/rootfs.tar.xz"
+ct_image_url                = "https://images.linuxcontainers.org/images/ubuntu/jammy/amd64/default/20260209_07:42/rootfs.tar.xz"
 
 ## VM Variables
 vm_id   = 9000

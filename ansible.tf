@@ -8,7 +8,7 @@ resource "local_file" "ansible_inventory" {
                     hosts = {
                         for name, cfg in var.containers :
                         name => {
-                            ansible_host = cfg.ip_address
+                            ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
                             ansible_user = "root"
                         } if can(regex("api", name))
                     }
@@ -21,7 +21,7 @@ resource "local_file" "ansible_inventory" {
                     hosts = {
                         for name, cfg in var.containers :
                         name => {
-                            ansible_hosts = cfg.ip_address
+                            ansible_hosts = proxmox_virtual_environment_container.this[name].ipv4.veth0
                             ansible_user  = "root"
                         }
                     }
@@ -31,6 +31,7 @@ resource "local_file" "ansible_inventory" {
     })
 
     depends_on = [
+        null_resource.install_ssh,
         proxmox_virtual_environment_container.this
     ]
 }
@@ -48,7 +49,7 @@ resource "null_resource" "ansible_provisioner" {
       # Wait for container to boot and get IP
       echo "Waiting for container ${each.key} to boot..."
       for i in {1..20}; do
-        ping_result=$(ping -c 1 ${each.value.ip_address} 2>&1)
+        ping_result=$(ping -c 1 ${proxmox_virtual_environment_container.this[each.key].ipv4.veth0} 2>&1)
         if echo "$${ping_result}" | grep -q "bytes from"; then
           echo "Container is reachable"
           break
@@ -62,7 +63,7 @@ resource "null_resource" "ansible_provisioner" {
 
   # Wait for SSH to be available
   provisioner "local-exec" {
-    command = "timeout 180 bash -c \"until nc -z ${each.value.ip_address} 22; do echo 'waiting for SSH...'; sleep 3; done\""
+    command = "timeout 180 bash -c \"until nc -z ${proxmox_virtual_environment_container.this[each.key].ipv4.veth0} 22; do echo 'waiting for SSH...'; sleep 3; done\""
   }
 
   # Install Python on the container (required for Ansible)
@@ -76,13 +77,14 @@ resource "null_resource" "ansible_provisioner" {
     connection {
       type        = "ssh"
       user        = "root"
-      host        = each.value.ip_address
+      host        = proxmox_virtual_environment_container.this[each.key].ipv4.veth0
       private_key = file("~/.ssh/id_ed25519")  # Adjust path to your private key
       timeout     = "5m"
     }
   }
 
   depends_on = [
+    null_resource.install_ssh,
     proxmox_virtual_environment_container.this,
     local_file.ansible_inventory
   ]
