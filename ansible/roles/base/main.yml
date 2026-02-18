@@ -1,0 +1,55 @@
+---
+# Base role - common setup for all servers
+- name: Update and install base packages
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Install basic packages
+      apt:
+        name:
+          - sudo
+          - curl
+          - wget
+          - git
+          - htop
+          - net-tools
+          - vim
+          - nano
+          - ca-certificates
+          - openssh-server
+          - openssh-client
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Set system hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+
+    # - name: Configure timezone to UTC
+    #   timezone:
+    #     name: UTC
+
+    - name: Ensure systemd-resolved is configured
+      lineinfile:
+        path: /etc/systemd/resolved.conf
+        regexp: "^#?DNS="
+        line: "DNS=1.1.1.1 8.8.8.8"
+      notify: restart systemd-resolved
+
+    - name: Ensure /etc/hostname has correct entry
+      lineinfile:
+        path: /etc/hosts
+        regexp: "^127.0.0.1"
+        line: "127.0.0.1 localhost {{ inventory_hostname }}"
+
+  handlers:
+    - name: restart systemd-resolved
+      systemd:
+        name: systemd-resolved
+        state: restarted

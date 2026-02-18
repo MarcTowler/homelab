@@ -1,0 +1,34 @@
+---
+# Base system variables
+base_packages:
+  - curl
+  - wget
+  - git
+  - htop
+  - net-tools
+  - vim
+  - nano
+
+# API Server variables
+php_version: "8.3"
+php_ini_memory_limit: "512M"
+php_ini_max_execution_time: "300"
+
+# Nginx variables
+nginx_worker_processes: auto
+nginx_worker_connections: 1024
+
+# Application paths
+app_user: www-data
+app_group: www-data
+app_root: /var/www/api
+
+# Composer configuration
+composer_global_packages: []
+
+# Security settings
+enable_firewall: true
+ssh_port: 22
+
+# Monitoring (optional)
+enable_monitoring: false

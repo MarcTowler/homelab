@@ -13,7 +13,7 @@ resource "local_file" "ansible_inventory" {
                         } if can(regex("api", name))
                     }
                 }
-                all = {
+                ungrouped = {
                     vars = {
                         ansible_port               = 22
                         ansible_python_interpreter = "/usr/bin/python3"
