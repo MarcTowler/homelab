@@ -1,0 +1,148 @@
+---
+# API Server role - Apache + PHP configuration
+- name: Install and configure Apache API server
+  hosts: api_servers
+  gather_facts: yes
+  become: yes
+
+  vars:
+    app_root: /var/www/api
+    app_user: www-data
+    app_group: www-data
+    php_version: "8.3"
+
+  pre_tasks:
+    - name: Update package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+  tasks:
+    - name: Install Apache and PHP packages
+      apt:
+        name:
+          - apache2
+          - apache2-utils
+          - libapache2-mod-php8.3
+          - php8.3
+          - php8.3-fpm
+          - php8.3-cli
+          - php8.3-curl
+          - php8.3-json
+          - php8.3-mbstring
+          - php8.3-xml
+          - php8.3-zip
+          - php8.3-gd
+          - php8.3-mysql
+          - php8.3-pdo
+          - composer
+          - git
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Create application directory
+      file:
+        path: "{{ app_root }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0755'
+
+    - name: Enable Apache modules
+      apache2_module:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - rewrite
+        - php8.3
+        - headers
+        - ssl
+      notify: reload apache2
+
+    - name: Disable Apache default site
+      command: a2dissite 000-default
+      ignore_errors: yes
+      notify: reload apache2
+
+    - name: Create Apache VirtualHost configuration
+      template:
+        src: ../templates/apache-api.conf.j2
+        dest: /etc/apache2/sites-available/api.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: reload apache2
+
+    - name: Enable API site
+      command: a2ensite api
+      notify: reload apache2
+
+    - name: Pull latest code from Git repository (if applicable)
+      git:
+        repo: https://github.com/ItsLit-Media-and-Development/api.git
+        dest: "{{ app_root }}"
+        version: main
+        force: yes
+        update: yes
+      notify: restart apache2
+    - name: Configure PHP (php.ini)
+      lineinfile:
+        path: "/etc/php/{{ php_version }}/apache2/php.ini"
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      loop:
+        - { regexp: '^memory_limit', line: 'memory_limit = 4098M' }
+        - { regexp: '^max_execution_time', line: 'max_execution_time = 3000' }
+        - { regexp: '^upload_max_filesize', line: 'upload_max_filesize = 100M' }
+        - { regexp: '^post_max_size', line: 'post_max_size = 100M' }
+      notify: reload apache2
+
+    - name: Enable and start Apache
+      systemd:
+        name: apache2
+        enabled: yes
+        state: started
+
+    - name: Create info.php for testing (remove in production)
+      copy:
+        content: "<?php phpinfo(); ?>"
+        dest: "{{ app_root }}/info.php"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0644'
+
+    - name: Create index.php with basic content
+      copy:
+        content: |
+          <?php
+          echo "API Server is running with Apache!";
+          echo "\nPHP Version: " . phpversion();
+          phpinfo();
+          ?>
+        dest: "{{ app_root }}/index.php"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0644'
+
+  handlers:
+    - name: reload apache2
+      systemd:
+        name: apache2
+        state: reloaded
+
+    - name: restart apache2
+      systemd:
+        name: apache2
+        state: restarted
+
+  post_tasks:
+    - name: Verify Apache configuration
+      command: apache2ctl configtest
+      register: apache_test
+      changed_when: false
+
+    - name: Report Apache configuration test
+      debug:
+        msg: "{{ apache_test.stdout_lines }}"

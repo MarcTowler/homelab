@@ -1,0 +1,7 @@
+---
+# Main provisioning playbook
+- name: Configure base system
+  import_playbook: ../roles/base/main.yml
+
+- name: Configure API server
+  import_playbook: php-server.yml
