@@ -9,7 +9,7 @@
     app_root: /var/www/api
     app_user: www-data
     app_group: www-data
-    php_version: "8.3"
+    php_version: "8.1"
 
   pre_tasks:
     - name: Update package cache
@@ -24,18 +24,18 @@
         name:
           - apache2
           - apache2-utils
-          - libapache2-mod-php8.3
-          - php8.3
-          - php8.3-fpm
-          - php8.3-cli
-          - php8.3-curl
-          - php8.3-json
-          - php8.3-mbstring
-          - php8.3-xml
-          - php8.3-zip
-          - php8.3-gd
-          - php8.3-mysql
-          - php8.3-pdo
+          - libapache2-mod-php8.1
+          - php8.1
+          - php8.1-fpm
+          - php8.1-cli
+          - php8.1-curl
+          - php8.1-json
+          - php8.1-mbstring
+          - php8.1-xml
+          - php8.1-zip
+          - php8.1-gd
+          - php8.1-mysql
+          - php8.1-pdo
           - composer
           - git
         state: present
@@ -55,7 +55,7 @@
         state: present
       loop:
         - rewrite
-        - php8.3
+        - php8.1
         - headers
         - ssl
       notify: reload apache2

@@ -1,9 +1,35 @@
 ---
+- name: Bootstrap playbook
+  hosts: all
+  # Don't gather facts automatically because that will trigger
+  # a connection, which needs to check the remote host key
+  gather_facts: false
+
+  tasks:
+    - name: Check known_hosts for {{ inventory_hostname }}
+      shell:
+        cmd: "ssh-keygen -F {{ inventory_hostname }}"
+      register: has_entry_in_known_hosts_file
+      changed_when: false
+      ignore_errors: true
+    - name: Ignore host key for {{ inventory_hostname }} on first run
+      when: has_entry_in_known_hosts_file.rc == 1
+      set_fact:
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+    - name: Add {{ inventory_hostname }} to known_hosts
+      shell: 
+        cmd: "ssh-keyscan -H {{ inventory_hostname }} >> ~/.ssh/known_hosts"
+      when: has_entry_in_known_hosts_file.rc == 1
+
 # Base role - common setup for all servers
 - name: Update and install base packages
   hosts: all
   gather_facts: yes
   tasks:
+    - name: Write the new ec2 instance host key to known hosts
+      shell: 
+        cmd: "ssh-keyscan -H {{ inventory_hostname }} >> ~/.ssh/known_hosts"
+      register: ssh_keyscan_result
     - name: Update apt cache
       apt:
         update_cache: yes
@@ -31,9 +57,9 @@
       hostname:
         name: "{{ inventory_hostname }}"
 
-    # - name: Configure timezone to UTC
-    #   timezone:
-    #     name: UTC
+    - name: Configure timezone to UTC
+      timezone:
+        name: UTC
 
     - name: Ensure systemd-resolved is configured
       lineinfile:

@@ -13,6 +13,15 @@ resource "local_file" "ansible_inventory" {
                         } if can(regex("api", name))
                     }
                 }
+                db_servers = {
+                    hosts = {
+                        for name, cfg in var.containers :
+                        name => {
+                            ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+                            ansible_user = "root"
+                        } if can(regex("db", name))
+                    }
+                }
                 ungrouped = {
                     vars = {
                         ansible_port               = 22
@@ -21,9 +30,9 @@ resource "local_file" "ansible_inventory" {
                     hosts = {
                         for name, cfg in var.containers :
                         name => {
-                            ansible_hosts = proxmox_virtual_environment_container.this[name].ipv4.veth0
+                            ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
                             ansible_user  = "root"
-                        }
+                        } if !can(regex("(db|api)", name))
                     }
                 }
             }
