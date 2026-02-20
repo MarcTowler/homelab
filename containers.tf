@@ -18,7 +18,6 @@ resource "proxmox_virtual_environment_container" "this" {
   features {
   }
 
-
   initialization {
     hostname = "${each.key}"
 
@@ -108,34 +107,4 @@ resource "random_password" "ubuntu_container_password" {
 resource "tls_private_key" "ubuntu_container_key" {
   algorithm = "RSA"
   rsa_bits  = 2048
-}
-
-resource "null_resource" "install_ssh" {
-  for_each = proxmox_virtual_environment_container.this
-
-  triggers = {
-    container_id = each.value.vm_id
-  }
-
-  # Wait for container to fully boot
-  provisioner "local-exec" {
-    command = "sleep 15"
-  }
-
-  # Update package manager via SSH to Proxmox host
-  provisioner "local-exec" {
-    command = "ssh -o StrictHostKeyChecking=no root@${each.value.node_name}.${var.domain_name} 'pct exec ${each.value.vm_id} -- apt-get update'"
-  }
-
-  # Install SSH server and client
-  provisioner "local-exec" {
-    command = "ssh -o StrictHostKeyChecking=no root@${each.value.node_name}.${var.domain_name} 'pct exec ${each.value.vm_id} -- apt-get install -y openssh-server openssh-client'"
-  }
-
-  # Ensure SSH service is running
-  provisioner "local-exec" {
-    command = "ssh -o StrictHostKeyChecking=no root@${each.value.node_name}.${var.domain_name} 'pct exec ${each.value.vm_id} -- systemctl start ssh'"
-  }
-
-  depends_on = [proxmox_virtual_environment_container.this]
 }

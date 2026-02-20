@@ -29,7 +29,7 @@
           - php8.1-fpm
           - php8.1-cli
           - php8.1-curl
-          - php8.1-json
+          #- php8.1-json
           - php8.1-mbstring
           - php8.1-xml
           - php8.1-zip
@@ -78,13 +78,27 @@
       command: a2ensite api
       notify: reload apache2
 
-    - name: Pull latest code from Git repository (if applicable)
+    - name: Copy GitHub Deploy Key to LXC
+      copy:
+        src: "../files/api_deploy_key" # Path to the private key on your Ansible control node
+        dest: "/tmp/api_deploy_key"    # Temporary location on the LXC
+        mode: '0600'
+
+    - name: Pull latest code from Git repository
       git:
-        repo: https://github.com/ItsLit-Media-and-Development/api.git
+        repo: git@github.com:ItsLit-Media-and-Development/api.git
         dest: "{{ app_root }}"
         version: main
         force: yes
         update: yes
+        accept_hostkey: yes
+        key_file: "/tmp/api_deploy_key"
+      notify: restart apache2
+
+    - name: Clean up temporary Deploy Key
+      file:
+        path: "/tmp/api_deploy_key"
+        state: absent
       notify: restart apache2
     - name: Configure PHP (php.ini)
       lineinfile:

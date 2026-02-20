@@ -3,6 +3,9 @@ resource "local_file" "ansible_inventory" {
 
     content  = yamlencode({
         all = {
+            vars = {
+              ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+            }
             children = {
                 api_servers = {
                     hosts = {
@@ -40,7 +43,6 @@ resource "local_file" "ansible_inventory" {
     })
 
     depends_on = [
-        null_resource.install_ssh,
         proxmox_virtual_environment_container.this
     ]
 }
@@ -93,7 +95,6 @@ resource "null_resource" "ansible_provisioner" {
   }
 
   depends_on = [
-    null_resource.install_ssh,
     proxmox_virtual_environment_container.this,
     local_file.ansible_inventory
   ]
