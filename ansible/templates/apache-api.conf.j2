@@ -2,7 +2,7 @@
     ServerName {{ inventory_hostname }}
     ServerAlias *.{{ inventory_hostname | regex_replace('^[^\.]+\.', '') }}
     
-    DocumentRoot {{ app_root }}
+    DocumentRoot {{ app_root }}/src
     
     # Logging
     ErrorLog ${APACHE_LOG_DIR}/api_error.log

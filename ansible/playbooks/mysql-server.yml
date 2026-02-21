@@ -1,0 +1,20 @@
+---
+# MySQL Server Playbook
+- name: Install and configure MySQL server
+  hosts: mysql_servers
+  gather_facts: yes
+  become: yes
+
+  pre_tasks:
+    - name: Update package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+  
+  tasks:
+    - name: Install MySQL server
+      apt:
+        name: mysql-server
+        state: present
+      when: ansible_os_family == "Debian"

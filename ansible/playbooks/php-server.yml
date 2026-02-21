@@ -78,21 +78,32 @@
       command: a2ensite api
       notify: reload apache2
 
+    - name: Ensure /root/.ssh directory exists
+      file:
+        path: /root/.ssh
+        state: directory
+        mode: '0700'
+
     - name: Copy GitHub Deploy Key to LXC
       copy:
         src: "../files/api_deploy_key" # Path to the private key on your Ansible control node
-        dest: "/tmp/api_deploy_key"    # Temporary location on the LXC
+        dest: "/root/.ssh/api_deploy_key"    # Temporary location on the LXC
         mode: '0600'
+
+    - name: Wipe broken git directory from previous failures
+      file:
+        path: "{{ app_root }}"
+        state: absent
 
     - name: Pull latest code from Git repository
       git:
         repo: git@github.com:ItsLit-Media-and-Development/api.git
         dest: "{{ app_root }}"
-        version: main
+        version: master
         force: yes
         update: yes
         accept_hostkey: yes
-        key_file: "/tmp/api_deploy_key"
+        key_file: "/root/.ssh/api_deploy_key"
       notify: restart apache2
 
     - name: Clean up temporary Deploy Key

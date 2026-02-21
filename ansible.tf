@@ -16,7 +16,7 @@ resource "local_file" "ansible_inventory" {
                         } if can(regex("api", name))
                     }
                 }
-                db_servers = {
+                mysql_servers = {
                     hosts = {
                         for name, cfg in var.containers :
                         name => {
