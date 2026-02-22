@@ -16,7 +16,7 @@
       apt:
         update_cache: yes
         cache_valid_time: 3600
-      when: ansible_os_family == "Debian"
+      when: ansible_facts["os_family"] == "Debian"
 
   tasks:
     - name: Install Apache and PHP packages
@@ -39,7 +39,7 @@
           - composer
           - git
         state: present
-      when: ansible_os_family == "Debian"
+      when: ansible_facts["os_family"] == "Debian"
 
     - name: Create application directory
       file:

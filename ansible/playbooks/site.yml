@@ -5,3 +5,6 @@
 
 - name: Configure API server
   import_playbook: php-server.yml
+
+- name: Configure MySQL server
+  import_playbook: mysql-server.yml

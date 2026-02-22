@@ -10,11 +10,41 @@
       apt:
         update_cache: yes
         cache_valid_time: 3600
-      when: ansible_os_family == "Debian"
+      when: ansible_facts["os_family"] == "Debian"
   
   tasks:
     - name: Install MySQL server
       apt:
-        name: mysql-server
+        name: 
+          - mysql-server
+          - python3-pymysql
         state: present
-      when: ansible_os_family == "Debian"
+      when: ansible_facts["os_family"] == "Debian"
+    
+    - name: Ensure MySQL is running and enabled
+      service:
+        name: mysql
+        state: started
+        enabled: yes
+    
+    - name: Force MySQL to listen on all interfaces
+      lineinfile:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        regexp: '(?i)^#?bind-address'
+        line: 'bind-address = 0.0.0.0'
+        state: present
+      notify: Restart MySQL
+    
+    - name: Create MySQL user for remote API access
+      community.mysql.mysql_user:
+        name: marctowl_api
+        host: "%"
+        priv: "*.*:ALL"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+  
+  handlers:
+    - name: Restart MySQL
+      service:
+        name: mysql
+        state: restarted
