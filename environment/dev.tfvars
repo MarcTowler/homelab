@@ -26,7 +26,6 @@ nodes = {
 # }
 
 #Containers
-#Containers
 containers = {
   db = {
     lxc_id     = 1000
@@ -34,7 +33,14 @@ containers = {
     memory     = 2048
     node       = "arcanine"
     ip_address = "dhcp"
-    image      = "ubuntu-22.04-standard"
+    mount_points = [
+      {
+        volume = "local-lvm"
+        size   = "10G"
+        path   = "/mnt/volume"
+      }
+    ]
+    tags       = ["Database", "Ubuntu"]
   },
   api = {
     lxc_id     = 1001
@@ -42,7 +48,7 @@ containers = {
     memory     = 4098
     node       = "arcanine"
     ip_address = "dhcp"
-    image      = "ubuntu-22.04-standard"
+    tags       = ["PHP", "Ubuntu"]
   },
   gapi = {
     lxc_id     = 1002
@@ -50,7 +56,7 @@ containers = {
     memory     = 4098
     node       = "arcanine"
     ip_address = "dhcp"
-    image      = "ubuntu-22.04-standard"
+    tags       = ["PHP", "Ubuntu"]
   },
   site = {
     lxc_id     = 1003
@@ -58,7 +64,7 @@ containers = {
     memory     = 4098
     node       = "arcanine"
     ip_address = "dhcp"
-    image      = "ubuntu-22.04-standard"
+    tags       = ["PHP", "Ubuntu"]
   },
   #traefik = {
   #  lxc_id     = 1004

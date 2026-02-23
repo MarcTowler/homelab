@@ -99,8 +99,18 @@ variable "containers" {
     cores      = number
     memory     = number
     node       = string
-    image      = string
+    image      = optional(string, "")
     ip_address = string
+    network    = optional(string, "veth0")
+    datastore_id = optional(string, "local-lvm")
+    disk_size  = optional(number, 20)
+    os_type    = optional(string, "ubuntu")
+    mount_points = optional(list(object({
+      volume = string
+      size   = string
+      path   = string
+    })), [])
+    tags       = list(string)
   }))
   default = {}
 }

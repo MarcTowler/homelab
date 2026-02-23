@@ -43,33 +43,26 @@ resource "proxmox_virtual_environment_container" "this" {
   }
 
   network_interface {
-    name = "veth0"
+    name = each.value.network
   }
 
   disk {
-    datastore_id = "local-lvm"
-    size         = 20
+    datastore_id = each.value.datastore_id
+    size         = each.value.disk_size
   }
 
   operating_system {
-    template_file_id = proxmox_virtual_environment_download_file.lxc-image.id
-    # Or you can use a volume ID, as obtained from a "pvesm list <storage>"
-    # template_file_id = "local:vztmpl/jammy-server-cloudimg-amd64.tar.gz"
-    type = "ubuntu"
+    template_file_id = (each.value.image != "") ? "local:vztmpl/${each.value.image}" : proxmox_virtual_environment_download_file.lxc-image.id
+    type = each.value.os_type
   }
 
-  mount_point {
-    # volume mount, a new volume will be created by PVE
-    volume = "local-lvm"
-    size   = "10G"
-    path   = "/mnt/volume"
-  }
-
-  mount_point {
-    # volume mount, an existing volume will be mounted
-    volume = "local-lvm" #:subvol-disk-${each.value.lxc_id}"
-    size   = "10G"
-    path   = "/mnt/data"
+  dynamic "mount_point" {
+    for_each = each.value.mount_points
+    content {
+      volume = mount_point.value.volume
+      size   = mount_point.value.size
+      path   = mount_point.value.path
+    }
   }
 
   lifecycle {
@@ -85,6 +78,8 @@ resource "proxmox_virtual_environment_container" "this" {
     up_delay   = "60"
     down_delay = "60"
   }
+
+  tags = each.value.tags
 }
 
 resource "proxmox_virtual_environment_download_file" "lxc-image" {

@@ -34,7 +34,7 @@
       apt:
         update_cache: yes
         cache_valid_time: 3600
-      when: ansible_os_family == "Debian"
+      when: ansible_facts["os_family"] == "Debian"
 
     - name: Install basic packages
       apt:
@@ -51,7 +51,7 @@
           - openssh-server
           - openssh-client
         state: present
-      when: ansible_os_family == "Debian"
+      when: ansible_facts["os_family"] == "Debian"
 
     - name: Set system hostname
       hostname:

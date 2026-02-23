@@ -60,16 +60,16 @@
         src: "{{ item }}"
         dest: /tmp/mysql_imports/
       with_fileglob:
-        - "files/sql_imports/*.sql"
+        - "../files/sql_imports/*.sql"
 
     - name: Import all SQL files
       community.mysql.mysql_db:
-        name: my_app_db
+        name: marctowl_itslitapi
         state: import
         target: "/tmp/mysql_imports/{{ item | basename }}"
         login_unix_socket: /var/run/mysqld/mysqld.sock
       with_fileglob:
-        - "files/sql_imports/*.sql"
+        - "../files/sql_imports/*.sql"
   
   handlers:
     - name: Restart MySQL
