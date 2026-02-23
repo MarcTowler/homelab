@@ -38,4 +38,4 @@ terraform.rc
 .terraform*
 tfplan
 terraform.tfvars
-ansible/files/*
+ansible/files/api_deploy_key
