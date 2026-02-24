@@ -1,7 +1,7 @@
 ---
 # API Server Playbook
 - name: Update the GAPI server and install necessary packages
-  hosts: api
+  hosts: gapi
   gather_facts: yes
   become: yes
 
