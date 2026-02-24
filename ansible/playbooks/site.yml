@@ -3,8 +3,14 @@
 - name: Configure base system
   import_playbook: ../roles/base/main.yml
 
-- name: Configure API server
+- name: Configure PHP server
   import_playbook: php-server.yml
 
 - name: Configure MySQL server
   import_playbook: mysql-server.yml
+
+- name: Configure API server
+  import_playbook: api.yml
+
+- name: Configure GAPI server
+  import_playbook: gapi.yml
