@@ -45,7 +45,7 @@
     
     - name: Create the target database
       community.mysql.mysql_db:
-        name: marctowler_itslitapi
+        name: marctowl_itslitapi
         state: present
         login_unix_socket: /var/run/mysqld/mysqld.sock
 
