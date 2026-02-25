@@ -52,7 +52,7 @@ resource "proxmox_virtual_environment_container" "this" {
   }
 
   operating_system {
-    template_file_id = (each.value.image != "") ? "local:vztmpl/${each.value.image}" : proxmox_virtual_environment_download_file.lxc-image.id
+    template_file_id = proxmox_virtual_environment_download_file.lxc-image[each.value.image].id
     type = each.value.os_type
   }
 
@@ -83,14 +83,13 @@ resource "proxmox_virtual_environment_container" "this" {
 }
 
 resource "proxmox_virtual_environment_download_file" "lxc-image" {
+  for_each = var.images
   node_name    = var.node
   content_type = "vztmpl"
   datastore_id = "local"
-  file_name    = var.ct_image_filename
-  url          = var.ct_image_url
-  #  checksum           = var.image_checksum
-  #  checksum_algorithm = var.image_checksum_algorithm
-  overwrite = false
+  file_name    = each.value.filename
+  url          = each.value.url
+  overwrite    = each.value.overwrite
 }
 
 resource "random_password" "ubuntu_container_password" {

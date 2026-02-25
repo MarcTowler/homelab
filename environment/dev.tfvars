@@ -33,6 +33,7 @@ containers = {
     memory     = 2048
     node       = "arcanine"
     ip_address = "dhcp"
+    image      = "ubuntu_2204"
     mount_points = [
       {
         volume = "local-lvm"
@@ -48,6 +49,7 @@ containers = {
     memory     = 4098
     node       = "arcanine"
     ip_address = "dhcp"
+    image      = "ubuntu_2204"
     tags       = ["PHP", "Ubuntu"]
   },
   gapi = {
@@ -56,6 +58,7 @@ containers = {
     memory     = 4098
     node       = "arcanine"
     ip_address = "dhcp"
+    image      = "ubuntu_2204"
     tags       = ["PHP", "Ubuntu"]
   },
   site = {
@@ -64,6 +67,7 @@ containers = {
     memory     = 4098
     node       = "arcanine"
     ip_address = "dhcp"
+    image      = "ubuntu_2204"
     tags       = ["PHP", "Ubuntu"]
   },
   #traefik = {
@@ -76,16 +80,25 @@ containers = {
   #}
 }
 
+images = {
+  ubuntu_2204 = {
+    filename = "ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
+    url      = "http://download.proxmox.com/images/system/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
+  },
+  # ubuntu_2504 = {
+  #   filename = "ubuntu-25.04-server-cloudimg-amd64.img"
+  #   url      = "https://cloud-images.ubuntu.com/releases/plucky/release/ubuntu-25.04-server-cloudimg-amd64.img"
+  # },
+  # windows_2025 = {
+  #   filename = "26100.32230.260111-0550.lt_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso"
+  #   url      = "https://software-static.download.prss.microsoft.com/dbazure/998969d5-f34g-4e03-ac9d-1f9786c66749/26100.32230.260111-0550.lt_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso"
+  # }
+}
+
 template_vm_id = 9000
 domain_name    = "itslit.me.uk"
 node           = "arcanine"
 acme_email     = "marc@marctowler.co.uk"
-
-## Image Variables
-vm_image_filename           = "ubuntu-25.04-server-cloudimg-amd64.img"
-vm_image_url                = "https://cloud-images.ubuntu.com/releases/plucky/release/ubuntu-25.04-server-cloudimg-amd64.img"
-ct_image_filename           = "ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
-ct_image_url                = "http://download.proxmox.com/images/system/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
 
 ## VM Variables
 vm_id   = 9000

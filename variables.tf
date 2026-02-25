@@ -143,38 +143,15 @@ variable "node" {
 }
 
 ## Image Variables
-variable "vm_image_filename" {
-  description = "Filename, default `null` will extract name from URL."
-  type        = string
-  default     = null
+variable "images" {
+  description = "Map of container images to download"
+  type = map(object({
+    filename = string
+    url      = string
+    overwrite = optional(bool, false)
+  }))
+  default = {}
 }
-
-variable "vm_image_url" {
-  description = "Image URL."
-  type        = string
-}
-
-variable "ct_image_filename" {
-  description = "Filename, default `null` will extract name from URL."
-  type        = string
-  default     = null
-}
-
-variable "ct_image_url" {
-  description = "Image URL."
-  type        = string
-}
-
-/* variable "image_checksum" {
-  description = "Image checksum value."
-  type        = string
-}
-
-variable "image_checksum_algorithm" {
-  description = "Image checksum algorithm."
-  type        = string
-  default     = "sha256"
-} */
 
 ## VM Variables
 variable "vm_id" {
