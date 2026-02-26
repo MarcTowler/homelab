@@ -14,3 +14,6 @@
 
 - name: Configure GAPI server
   import_playbook: gapi.yml
+
+- name: Configure homepage server
+  import_playbook: homepage.yml

@@ -70,6 +70,15 @@ containers = {
     image      = "ubuntu_2204"
     tags       = ["PHP", "Ubuntu"]
   },
+  homepage = {
+    lxc_id     = 1004
+    cores      = 2
+    memory     = 2048
+    node       = "arcanine"
+    ip_address = "dhcp"
+    image      = "ubuntu_2204"
+    tags       = ["NPM", "Ubuntu"]
+  }
   #traefik = {
   #  lxc_id     = 1004
   #  cores      = 2

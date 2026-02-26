@@ -1,0 +1,42 @@
+---
+- name: Update the homepage server and install necessary packages
+  hosts: homepage
+  gather_facts: yes
+  become: yes
+
+  tasks:
+    - name: Install Node.js and npm
+      apt:
+        name:
+          - nodejs
+          - npm
+        state: present
+      when: ansible_facts["os_family"] == "Debian"
+    
+    - name: Get the latest code from GitHub
+      git:
+        repo: https://github.com/gethomepage/homepage.git
+        dest: /var/www/homepage
+        version: main
+        force: yes
+        update: yes
+      notify: restart homepage
+    
+    - name: Install npm dependencies
+      npm:
+        name: pnpm
+        global: yes
+    
+    - name: Install project dependencies with pnpm
+      command: pnpm install
+
+    - name: Build the homepage application
+      command: pnpm build
+
+    - name: Copy skeleton
+      copy:
+        src: /var/www/homepage/src/skeleton
+        dest: /var/www/homepage/config
+    
+    - name: Run the server
+      command: HOMEPAGE_ALLOWED_HOSTS=homepage.itslit.me.uk pnpm start
