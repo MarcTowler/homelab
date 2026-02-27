@@ -8,10 +8,8 @@
     - name: Install Node.js and npm
       apt:
         name:
-          - nodejs
           - npm
         state: present
-      when: ansible_facts["os_family"] == "Debian"
     
     - name: Get the latest code from GitHub
       git:
@@ -22,10 +20,52 @@
         update: yes
       notify: restart homepage
     
-    - name: Install npm dependencies
-      npm:
-        name: pnpm
-        global: yes
+    - name: Upgrade Node.js and Fix Conflicts for Homepage
+  hosts: all
+  become: true
+  tasks:
+    - name: Remove conflicting legacy libnode-dev package
+      ansible.builtin.apt:
+        name: libnode-dev
+        state: absent
+        purge: yes
+
+    - name: Fix broken package dependencies
+      ansible.builtin.apt:
+        fixed: yes
+        update_cache: yes
+
+    - name: Ensure repository tools are present
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+
+    - name: Create directory for system keys
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download NodeSource GPG key
+      ansible.builtin.get_url:
+        url: https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
+        dest: /etc/apt/keyrings/nodesource.asc
+        mode: '0644'
+
+    - name: Add NodeSource repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/nodesource.asc] https://deb.nodesource.com/node_20.x nodistro main"
+        state: present
+        filename: nodesource
+
+    - name: Install Node.js v20
+      ansible.builtin.apt:
+        name: nodejs
+        state: present
+        update_cache: yes
     
     - name: Install project dependencies with pnpm
       command: pnpm install
@@ -39,4 +79,4 @@
         dest: /var/www/homepage/config
     
     - name: Run the server
-      command: HOMEPAGE_ALLOWED_HOSTS=homepage.itslit.me.uk pnpm start
+      command: HOMEPAGE_ALLOWED_HOSTS=homepage.itslit.me.uk:3000 pnpm start
