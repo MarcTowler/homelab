@@ -1,0 +1,15 @@
+[Unit]
+Description=Homepage Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/homepage
+# Add your environment variable here
+Environment=HOMEPAGE_ALLOWED_HOSTS=homepage.itslit.me.uk:3000
+ExecStart=/usr/local/bin/pnpm start
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

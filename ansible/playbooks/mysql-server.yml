@@ -49,28 +49,38 @@
         state: present
         login_unix_socket: /var/run/mysqld/mysqld.sock
 
-    - name: Ensure temporary directory exists on DB server
-      file:
-        path: /tmp/mysql_imports
-        state: directory
-        mode: '0755'
-
-    - name: Copy all SQL files to the server
-      copy:
-        src: "{{ item }}"
-        dest: /tmp/mysql_imports/
-      with_fileglob:
-        - "../files/sql_imports/*.sql"
-
-    - name: Import all SQL files
-      community.mysql.mysql_db:
-        name: marctowl_itslitapi
-        state: import
-        target: "/tmp/mysql_imports/{{ item | basename }}"
+    - name: Check if tables already exist in the database
+      community.mysql.mysql_query:
         login_unix_socket: /var/run/mysqld/mysqld.sock
-      with_fileglob:
-        - "../files/sql_imports/*.sql"
-  
+        login_db: marctowl_itslitapi
+        query: SHOW TABLES
+      register: table_check
+
+    - name: Setup and import SQL files ONLY if database is empty
+      block:
+        - name: Ensure temporary directory exists on DB server
+          file:
+            path: /tmp/mysql_imports
+            state: directory
+            mode: '0755'
+
+        - name: Copy all SQL files to the server
+          copy:
+            src: "{{ item }}"
+            dest: /tmp/mysql_imports/
+          with_fileglob:
+            - "../files/sql_imports/*.sql"
+
+        - name: Import all SQL files
+          community.mysql.mysql_db:
+            name: marctowl_itslitapi
+            state: import
+            target: "/tmp/mysql_imports/{{ item | basename }}"
+            login_unix_socket: /var/run/mysqld/mysqld.sock
+          with_fileglob:
+            - "../files/sql_imports/*.sql"
+      when: table_check.query_result[0] | length == 0
+
   handlers:
     - name: Restart MySQL
       service:
