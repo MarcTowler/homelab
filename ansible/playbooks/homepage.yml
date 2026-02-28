@@ -4,6 +4,10 @@
   gather_facts: yes
   become: yes
 
+  vars_files:
+    - "../inventory/secrets.yml"      # Encrypted secrets
+    - "../inventory/homepage_data.yml" # Data from Terraform
+
   tasks:
     - name: Purge legacy Node.js and conflicting packages
       apt:
@@ -83,6 +87,11 @@
         src: ../templates/homepage.service.j2
         dest: /etc/systemd/system/homepage.service
         mode: '0644'
+
+    - name: Deploy services.yaml
+      template:
+        src: ../templates/homepage-services.yaml.j2
+        dest: /var/www/homepage/config/services.yaml
 
     - name: Reload systemd and start service
       systemd:

@@ -110,9 +110,40 @@ resource "null_resource" "run_ansible" {
     command     = "ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/site.yml"
     working_dir = path.module
     on_failure  = continue
+
+    environment = {
+      # This points Ansible to a password file or you can use 
+      # ANSIBLE_VAULT_PASSWORD (if your version supports it)
+      ANSIBLE_VAULT_PASSWORD_FILE = "${path.module}/ansible/.vault_pass"
+    }
   }
 
   depends_on = [
     null_resource.ansible_provisioner
   ]
+}
+
+resource "local_file" "homepage_vars" {
+  filename = "${path.module}/ansible/inventory/homepage_data.yml"
+
+  content = yamlencode({
+    homepage_containers = {
+      for name, cfg in var.containers :
+      name => {
+        name = name
+        ip   = proxmox_virtual_environment_container.this[name].ipv4.veth0
+        vmid = proxmox_virtual_environment_container.this[name].vm_id
+        node = proxmox_virtual_environment_container.this[name].node_name
+        # Automatic Icon Selection Logic
+        icon = (
+          can(regex("pihole", name)) ? "pi-hole.png" :
+          can(regex("plex", name))   ? "plex.png" :
+          can(regex("db|mysql|mariadb", name)) ? "mariadb.png" :
+          can(regex("nginx|proxy", name)) ? "nginx.png" :
+          can(regex("api", name))    ? "php.png" : 
+          "mdi-container" # Default icon
+        )
+      }
+    }
+  })
 }

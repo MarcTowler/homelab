@@ -39,3 +39,4 @@ terraform.rc
 tfplan
 terraform.tfvars
 ansible/files/*deploy_key
+ansible/.vault_pass

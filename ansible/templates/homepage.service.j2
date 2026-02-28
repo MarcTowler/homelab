@@ -6,10 +6,13 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/var/www/homepage
-# Add your environment variable here
 Environment=HOMEPAGE_ALLOWED_HOSTS=homepage.itslit.me.uk:3000
-ExecStart=/usr/local/bin/pnpm start
+
+# Fix: Use /usr/bin/pnpm (or the result of 'which pnpm')
+ExecStart=/usr/bin/pnpm start
+
 Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

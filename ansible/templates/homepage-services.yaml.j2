@@ -1,0 +1,30 @@
+- Infrastructure:
+    - OPNsense:
+        icon: opnsense.png
+        href: https://opnsense.itslit.me.uk
+        widget:
+          type: opnsense
+          url: https://opnsense.itslit.me.uk
+          username: {{ opnsense_key }}
+          password: {{ opnsense_secret }}
+{% for host in groups['proxmox_nodes'] %}
+    - {{ hostvars[host].inventory_hostname }}:
+        icon: proxmox.png
+        href: https://{{ hostvars[host].ansible_host }}:8006
+        widget:
+          type: proxmox
+          url: https://{{ hostvars[host].ansible_host }}:8006
+          username: {{ proxmox_user }}
+          password: {{ proxmox_token }}
+{% endfor %}
+
+- Deployed Containers:
+{% for key, item in homepage_containers.items() %}
+    - {{ item.name }}:
+        icon: {{ item.icon }}
+        #href: "http://{{ item.ip | replace('/24', '') }}" # Strips CIDR if present
+        href: "https://{{ item.name }}.itslit.me.uk"
+        proxmoxNode: {{ item.node }}
+        proxmoxVMID: {{ item.vmid }}
+        proxmoxType: lxc
+{% endfor %}

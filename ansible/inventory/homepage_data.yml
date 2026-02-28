@@ -1,0 +1,31 @@
+"homepage_containers":
+  "api":
+    "icon": "php.png"
+    "ip": "10.0.1.26"
+    "name": "api"
+    "node": "arcanine"
+    "vmid": 1001
+  "db":
+    "icon": "mariadb.png"
+    "ip": "10.0.1.66"
+    "name": "db"
+    "node": "arcanine"
+    "vmid": 1000
+  "gapi":
+    "icon": "php.png"
+    "ip": "10.0.1.48"
+    "name": "gapi"
+    "node": "arcanine"
+    "vmid": 1002
+  "homepage":
+    "icon": "mdi-container"
+    "ip": "10.0.1.215"
+    "name": "homepage"
+    "node": "arcanine"
+    "vmid": 1004
+  "site":
+    "icon": "mdi-container"
+    "ip": "10.0.1.98"
+    "name": "site"
+    "node": "arcanine"
+    "vmid": 1003
