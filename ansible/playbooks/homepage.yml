@@ -3,84 +3,115 @@
   hosts: homepage
   gather_facts: yes
   become: yes
+  timeout: 1800  # 30 minute timeout for the entire playbook
 
   vars_files:
     - "../inventory/secrets.yml"      # Encrypted secrets
     - "../inventory/homepage_data.yml" # Data from Terraform
 
+  vars:
+    npm_timeout: 3600  # 1 hour timeout for npm commands
+
   tasks:
-    - name: Purge legacy Node.js and conflicting packages
-      apt:
-        name: 
-          - nodejs
-          - npm
-          - libnode-dev
-        state: absent
-        purge: yes
+    - name: Check if Node.js is installed
+      command: which node
+      register: node_check
+      failed_when: false
+      changed_when: false
 
-    - name: Clean up unused dependencies
-      apt:
-        autoremove: yes
+    - name: Purge and reinstall Node.js only if not present
+      block:
+        - name: Purge legacy Node.js and conflicting packages
+          apt:
+            name: 
+              - nodejs
+              - npm
+              - libnode-dev
+            state: absent
+            purge: yes
 
-    - name: Fix broken package dependencies (Manual Fallback)
-      shell: apt-get install -f -y
-      register: repair_result
-      changed_when: "'0 upgraded, 0 newly installed' not in repair_result.stdout"
+        - name: Clean up unused dependencies
+          apt:
+            autoremove: yes
 
-    - name: Ensure repository tools are present
-      apt:
-        name: 
-          - ca-certificates
-          - curl
-          - gnupg
-        state: present
+        - name: Fix broken package dependencies
+          shell: apt-get install -f -y
+          register: repair_result
+          changed_when: "'0 upgraded, 0 newly installed' not in repair_result.stdout"
 
-    - name: Create directory for system keys
-      file:
-        path: /etc/apt/keyrings
-        state: directory
-        mode: '0755'
+        - name: Ensure repository tools are present
+          apt:
+            name: 
+              - ca-certificates
+              - curl
+              - gnupg
+            state: present
 
-    - name: Download NodeSource GPG key
-      get_url:
-        url: https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
-        dest: /etc/apt/keyrings/nodesource.asc
-        mode: '0644'
+        - name: Create directory for system keys
+          file:
+            path: /etc/apt/keyrings
+            state: directory
+            mode: '0755'
 
-    - name: Add NodeSource repository
-      apt_repository:
-        repo: "deb [signed-by=/etc/apt/keyrings/nodesource.asc] https://deb.nodesource.com/node_20.x nodistro main"
-        state: present
-        filename: nodesource
+        - name: Download NodeSource GPG key
+          get_url:
+            url: https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
+            dest: /etc/apt/keyrings/nodesource.asc
+            mode: '0644'
 
-    - name: Install modern Node.js v20 (Must be 'latest' to override OS defaults)
-      apt:
-        name: nodejs
-        state: latest
-        update_cache: yes
+        - name: Add NodeSource repository
+          apt_repository:
+            repo: "deb [signed-by=/etc/apt/keyrings/nodesource.asc] https://deb.nodesource.com/node_20.x nodistro main"
+            state: present
+            filename: nodesource
 
-    - name: Install pnpm globally using npm
-      npm:
-        name: pnpm
-        global: yes
-        state: present
+        - name: Install modern Node.js v20
+          apt:
+            name: nodejs
+            state: latest
+            update_cache: yes
+
+        - name: Install pnpm globally using npm
+          npm:
+            name: pnpm
+            global: yes
+            state: present
+
+      when: node_check.rc != 0
 
     - name: Get the latest code from GitHub
       git:
         repo: https://github.com/gethomepage/homepage.git
         dest: /var/www/homepage
         version: main
-        force: yes
+        force: no
+      register: git_result
+
+    - name: Check if node_modules exist
+      stat:
+        path: /var/www/homepage/node_modules
+      register: node_modules_stat
 
     - name: Install project dependencies
-      command: pnpm install
+      command: pnpm install --frozen-lockfile
       args:
         chdir: /var/www/homepage
+      environment:
+        NODE_OPTIONS: "--max_old_space_size=2048"
+      timeout: "{{ npm_timeout }}"
+
+    - name: Check if .next build directory exists
+      stat:
+        path: /var/www/homepage/.next
+      register: next_dir_stat
 
     - name: Build the homepage application
       command: pnpm build
       args:
         chdir: /var/www/homepage
+      environment:
+        NODE_OPTIONS: "--max_old_space_size=2048"
+      timeout: "{{ npm_timeout }}"
 
     - name: Copy systemd service file
       template:
@@ -93,9 +124,46 @@
         src: ../templates/homepage-services.yaml.j2
         dest: /var/www/homepage/config/services.yaml
 
-    - name: Reload systemd and start service
+    - name: Deploy proxmox.yaml
+      template:
+        src: ../templates/proxmox.yaml.j2
+        dest: /var/www/homepage/config/proxmox.yaml
+
+    - name: Reload systemd configuration
+      systemd:
+        daemon_reload: yes
+
+    - name: Stop homepage service if running
       systemd:
         name: homepage
-        state: restarted
+        state: stopped
+      failed_when: false
+
+    - name: Wait for service to fully stop
+      pause:
+        seconds: 2
+
+    - name: Start homepage service
+      systemd:
+        name: homepage
+        state: started
         enabled: yes
-        daemon_reload: yes
+
+    - name: Wait for service to start
+      pause:
+        seconds: 3
+
+    - name: Check if service is running
+      systemd:
+        name: homepage
+      register: service_status
+      ignore_errors: yes
+
+    - name: Wait for service to stabilize
+      pause:
+        seconds: 5
+
+    - name: Check service status again
+      command: systemctl status homepage
+      register: service_check_result
+      ignore_errors: yes

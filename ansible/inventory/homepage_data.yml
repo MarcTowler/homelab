@@ -29,3 +29,9 @@
     "name": "site"
     "node": "arcanine"
     "vmid": 1003
+  "traefik":
+    "icon": "mdi-container"
+    "ip": "10.0.1.222"
+    "name": "traefik"
+    "node": "arcanine"
+    "vmid": 1005

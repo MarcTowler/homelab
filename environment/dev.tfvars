@@ -41,7 +41,7 @@ containers = {
         path   = "/mnt/volume"
       }
     ]
-    tags       = ["Database", "Ubuntu"]
+    tags       = ["database", "ubuntu"]
   },
   api = {
     lxc_id     = 1001
@@ -50,7 +50,7 @@ containers = {
     node       = "arcanine"
     ip_address = "dhcp"
     image      = "ubuntu_2204"
-    tags       = ["PHP", "Ubuntu"]
+    tags       = ["php", "ubuntu"]
   },
   gapi = {
     lxc_id     = 1002
@@ -59,7 +59,7 @@ containers = {
     node       = "arcanine"
     ip_address = "dhcp"
     image      = "ubuntu_2204"
-    tags       = ["PHP", "Ubuntu"]
+    tags       = ["php", "ubuntu"]
   },
   site = {
     lxc_id     = 1003
@@ -68,25 +68,26 @@ containers = {
     node       = "arcanine"
     ip_address = "dhcp"
     image      = "ubuntu_2204"
-    tags       = ["PHP", "Ubuntu"]
+    tags       = ["php", "ubuntu"]
   },
   homepage = {
     lxc_id     = 1004
+    cores      = 1
+    memory     = 2048
+    node       = "arcanine"
+    ip_address = "dhcp"
+    image      = "ubuntu_2204"
+    tags       = ["npm", "ubuntu"]
+  },
+  traefik = {
+    lxc_id     = 1005
     cores      = 2
     memory     = 2048
     node       = "arcanine"
     ip_address = "dhcp"
     image      = "ubuntu_2204"
-    tags       = ["NPM", "Ubuntu"]
+    tags       = ["traefik", "ubuntu"]
   }
-  #traefik = {
-  #  lxc_id     = 1004
-  #  cores      = 2
-  #  memory     = 4098
-  #  node       = "growlithe"
-  #  ip_address = "dhcp"
-  #  image      = "ubuntu-22.04-standard"
-  #}
 }
 
 images = {
