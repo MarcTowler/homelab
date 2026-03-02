@@ -41,7 +41,7 @@ containers = {
         path   = "/mnt/volume"
       }
     ]
-    tags       = ["database", "ubuntu"]
+    tags = ["database", "ubuntu"]
   },
   api = {
     lxc_id     = 1001
@@ -72,7 +72,7 @@ containers = {
   },
   homepage = {
     lxc_id     = 1004
-    cores      = 1
+    cores      = 2
     memory     = 2048
     node       = "arcanine"
     ip_address = "dhcp"

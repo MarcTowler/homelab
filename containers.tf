@@ -19,7 +19,7 @@ resource "proxmox_virtual_environment_container" "this" {
   }
 
   initialization {
-    hostname = "${each.key}"
+    hostname = each.key
 
     ip_config {
       ipv4 {
@@ -53,7 +53,7 @@ resource "proxmox_virtual_environment_container" "this" {
 
   operating_system {
     template_file_id = proxmox_virtual_environment_download_file.lxc-image[each.value.image].id
-    type = each.value.os_type
+    type             = each.value.os_type
   }
 
   dynamic "mount_point" {
@@ -83,7 +83,7 @@ resource "proxmox_virtual_environment_container" "this" {
 }
 
 resource "proxmox_virtual_environment_download_file" "lxc-image" {
-  for_each = var.images
+  for_each     = var.images
   node_name    = var.node
   content_type = "vztmpl"
   datastore_id = "local"

@@ -95,22 +95,22 @@ variable "vms" {
 variable "containers" {
   description = "LXC Container Specifications to create"
   type = map(object({
-    lxc_id     = number
-    cores      = number
-    memory     = number
-    node       = string
-    image      = optional(string, "")
-    ip_address = string
-    network    = optional(string, "veth0")
+    lxc_id       = number
+    cores        = number
+    memory       = number
+    node         = string
+    image        = optional(string, "")
+    ip_address   = string
+    network      = optional(string, "veth0")
     datastore_id = optional(string, "local-lvm")
-    disk_size  = optional(number, 20)
-    os_type    = optional(string, "ubuntu")
+    disk_size    = optional(number, 20)
+    os_type      = optional(string, "ubuntu")
     mount_points = optional(list(object({
       volume = string
       size   = string
       path   = string
     })), [])
-    tags       = list(string)
+    tags = list(string)
   }))
   default = {}
 }
@@ -146,8 +146,8 @@ variable "node" {
 variable "images" {
   description = "Map of container images to download"
   type = map(object({
-    filename = string
-    url      = string
+    filename  = string
+    url       = string
     overwrite = optional(bool, false)
   }))
   default = {}

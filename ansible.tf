@@ -1,50 +1,50 @@
 resource "local_file" "ansible_inventory" {
-    filename = "${path.module}/ansible/inventory/hosts.yml"
+  filename = "${path.module}/ansible/inventory/hosts.yml"
 
-    content  = yamlencode({
-        all = {
-            vars = {
-              ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-            }
-            children = {
-                api_servers = {
-                    hosts = {
-                        for name, cfg in var.containers :
-                        name => {
-                            ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
-                            ansible_user = "root"
-                        } if can(regex("api", name))
-                    }
-                }
-                mysql_servers = {
-                    hosts = {
-                        for name, cfg in var.containers :
-                        name => {
-                            ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
-                            ansible_user = "root"
-                        } if can(regex("db", name))
-                    }
-                }
-                ungrouped = {
-                    vars = {
-                        ansible_port               = 22
-                        ansible_python_interpreter = "/usr/bin/python3"
-                    }
-                    hosts = {
-                        for name, cfg in var.containers :
-                        name => {
-                            ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
-                            ansible_user  = "root"
-                        } if !can(regex("(db|api)", name))
-                    }
-                }
-            }
+  content = yamlencode({
+    all = {
+      vars = {
+        ansible_ssh_common_args : "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      }
+      children = {
+        api_servers = {
+          hosts = {
+            for name, cfg in var.containers :
+            name => {
+              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_user = "root"
+            } if can(regex("api", name))
+          }
         }
-    })
+        mysql_servers = {
+          hosts = {
+            for name, cfg in var.containers :
+            name => {
+              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_user = "root"
+            } if can(regex("db", name))
+          }
+        }
+        ungrouped = {
+          vars = {
+            ansible_port               = 22
+            ansible_python_interpreter = "/usr/bin/python3"
+          }
+          hosts = {
+            for name, cfg in var.containers :
+            name => {
+              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_user = "root"
+            } if !can(regex("(db|api)", name))
+          }
+        }
+      }
+    }
+  })
 
-    depends_on = [
-        proxmox_virtual_environment_container.this
-    ]
+  depends_on = [
+    proxmox_virtual_environment_container.this
+  ]
 }
 
 resource "null_resource" "ansible_provisioner" {
@@ -56,7 +56,7 @@ resource "null_resource" "ansible_provisioner" {
 
   # Wait for container to be ready (has an IP address)
   provisioner "local-exec" {
-    command = <<-EOT
+    command     = <<-EOT
       # Wait for container to boot and get IP
       echo "Waiting for container ${each.key} to boot..."
       for i in {1..20}; do
@@ -89,7 +89,7 @@ resource "null_resource" "ansible_provisioner" {
       type        = "ssh"
       user        = "root"
       host        = proxmox_virtual_environment_container.this[each.key].ipv4.veth0
-      private_key = file("~/.ssh/id_ed25519")  # Adjust path to your private key
+      private_key = file("~/.ssh/id_ed25519") # Adjust path to your private key
       timeout     = "5m"
     }
   }
@@ -137,10 +137,12 @@ resource "local_file" "homepage_vars" {
         # Automatic Icon Selection Logic
         icon = (
           can(regex("pihole", name)) ? "pi-hole.png" :
-          can(regex("plex", name))   ? "plex.png" :
+          can(regex("plex", name)) ? "plex.png" :
           can(regex("db|mysql|mariadb", name)) ? "mariadb.png" :
           can(regex("nginx|proxy", name)) ? "nginx.png" :
-          can(regex("api", name))    ? "php.png" : 
+          can(regex("api|site", name)) ? "php.png" :
+          can(regex("traefik", name)) ? "traefik.png" :
+          can(regex("homepage", name)) ? "homepage.png" :
           "mdi-container" # Default icon
         )
       }

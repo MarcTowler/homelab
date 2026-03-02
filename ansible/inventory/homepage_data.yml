@@ -18,19 +18,19 @@
     "node": "arcanine"
     "vmid": 1002
   "homepage":
-    "icon": "mdi-container"
+    "icon": "homepage.png"
     "ip": "10.0.1.215"
     "name": "homepage"
     "node": "arcanine"
     "vmid": 1004
   "site":
-    "icon": "mdi-container"
+    "icon": "php.png"
     "ip": "10.0.1.98"
     "name": "site"
     "node": "arcanine"
     "vmid": 1003
   "traefik":
-    "icon": "mdi-container"
+    "icon": "traefik.png"
     "ip": "10.0.1.222"
     "name": "traefik"
     "node": "arcanine"

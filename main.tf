@@ -36,10 +36,10 @@ resource "proxmox_virtual_environment_dns" "node_dns" {
   for_each = var.nodes
 
   node_name = each.value.node_name
-  servers   = [
+  servers = [
     var.gateway,
     "8.8.8.8",
     "1.1.1.1"
   ]
-  domain    = var.domain_name
+  domain = var.domain_name
 }
