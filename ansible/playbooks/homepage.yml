@@ -124,11 +124,6 @@
         src: ../templates/homepage-services.yaml.j2
         dest: /var/www/homepage/config/services.yaml
 
-    - name: Deploy proxmox.yaml
-      template:
-        src: ../templates/proxmox.yaml.j2
-        dest: /var/www/homepage/config/proxmox.yaml
-
     - name: Reload systemd configuration
       systemd:
         daemon_reload: yes

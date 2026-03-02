@@ -17,3 +17,9 @@
 
 - name: Configure homepage server
   import_playbook: homepage.yml
+
+- name: Configure monitoring stack
+  import_playbook: monitoring.yml
+
+- name: Configure Proxmox nodes for monitoring
+  import_playbook: proxmox-monitoring.yml
