@@ -1,0 +1,80 @@
+groups:
+  - name: system_alerts
+    interval: 30s
+    rules:
+      # Node Exporter Alerts
+      - alert: NodeDown
+        expr: up{job=~"proxmox-nodes|api-servers|web-services"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node {% raw %}{{ $labels.instance }}{% endraw %} is down"
+          description: "{% raw %}{{ $labels.instance }}{% endraw %} has been unreachable for 5 minutes."
+
+      - alert: HighCPUUsage
+        expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {% raw %}{{ $labels.instance }}{% endraw %}"
+          description: "CPU usage is {% raw %}{{ $value | humanize }}{% endraw %}% on {% raw %}{{ $labels.instance }}{% endraw %}"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {% raw %}{{ $labels.instance }}{% endraw %}"
+          description: "Memory usage is {% raw %}{{ $value | humanize }}{% endraw %}% on {% raw %}{{ $labels.instance }}{% endraw %}"
+
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"})) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk usage on {% raw %}{{ $labels.instance }}{% endraw %}"
+          description: "Disk usage is {% raw %}{{ $value | humanizePercentage }}{% endraw %} on {% raw %}{{ $labels.mountpoint }}{% endraw %}"
+
+      # MySQL Alerts
+      - alert: MySQLDown
+        expr: up{job="mysql"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MySQL {% raw %}{{ $labels.instance }}{% endraw %} is down"
+          description: "MySQL on {% raw %}{{ $labels.instance }}{% endraw %} has been unreachable for 2 minutes."
+
+      - alert: MySQLHighConnections
+        expr: mysql_global_status_threads_connected / mysql_global_variables_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MySQL {% raw %}{{ $labels.instance }}{% endraw %} is running out of connections"
+          description: "MySQL connections on {% raw %}{{ $labels.instance }}{% endraw %} is {% raw %}{{ $value | humanizePercentage }}{% endraw %} of max."
+
+      - alert: MySQLSlaveReplicationLag
+        expr: mysql_slave_status_seconds_behind_master > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MySQL replication lag on {% raw %}{{ $labels.instance }}{% endraw %}"
+          description: "MySQL replication is {% raw %}{{ $value }}{% endraw %} seconds behind on {% raw %}{{ $labels.instance }}{% endraw %}"
+
+  - name: service_alerts
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up{job=~"api-servers|web-services"} == 0
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {% raw %}{{ $labels.job }}{% endraw %} on {% raw %}{{ $labels.instance }}{% endraw %} is down"
+          description: "{% raw %}{{ $labels.instance }}{% endraw %} has been unreachable for 3 minutes."

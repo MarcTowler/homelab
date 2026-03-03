@@ -1,0 +1,22 @@
+[paths]
+data = {{ grafana_data_dir }}
+logs = /var/log/grafana
+plugins = {{ grafana_data_dir }}/plugins
+provisioning = {{ grafana_data_dir }}/provisioning
+
+[server]
+root_url = http://{{ grafana_domain | default('localhost:' + grafana_port|string) }}
+http_port = {{ grafana_port }}
+
+[security]
+admin_user = admin
+admin_password = {{ vault_grafana_admin_password }}
+
+[users]
+allow_sign_up = false
+
+[log]
+level = info
+
+[alerting]
+enabled = true

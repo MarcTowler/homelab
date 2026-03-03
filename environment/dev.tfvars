@@ -87,6 +87,27 @@ containers = {
     ip_address = "dhcp"
     image      = "ubuntu_2204"
     tags       = ["traefik", "ubuntu"]
+  },
+  monitoring = {
+    lxc_id     = 1006
+    cores      = 4
+    memory     = 4096
+    node       = "arcanine"
+    ip_address = "dhcp"
+    image      = "ubuntu_2204"
+    mount_points = [
+      {
+        volume = "local-lvm"
+        size   = "50G"
+        path   = "/var/lib/prometheus"
+      },
+      {
+        volume = "local-lvm"
+        size   = "20G"
+        path   = "/var/lib/grafana"
+      }
+    ]
+    tags = ["monitoring", "prometheus", "grafana", "ubuntu"]
   }
 }
 

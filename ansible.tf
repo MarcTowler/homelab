@@ -34,6 +34,15 @@ resource "local_file" "ansible_inventory" {
             } if can(regex("monitoring", name))
           }
         }
+        proxmox_nodes = {
+          hosts = {
+            for name, cfg in var.nodes :
+            name => {
+              ansible_host = cfg.ip_address
+              ansible_user = "root"
+            }
+          }
+        }
         ungrouped = {
           vars = {
             ansible_port               = 22
@@ -152,6 +161,7 @@ resource "local_file" "homepage_vars" {
           can(regex("api|site", name)) ? "php.png" :
           can(regex("traefik", name)) ? "traefik.png" :
           can(regex("homepage", name)) ? "homepage.png" :
+          can(regex("monitoring", name)) ? "grafana.png" :
           "mdi-container" # Default icon
         )
       }

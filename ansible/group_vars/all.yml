@@ -32,3 +32,8 @@ ssh_port: 22
 
 # Monitoring (optional)
 enable_monitoring: false
+# Proxmox Cluster Nodes
+cluster_nodes:
+  - arcanine
+  - growlithe
+  - fuecoco

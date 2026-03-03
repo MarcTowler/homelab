@@ -22,7 +22,7 @@
 
     - name: Create Apache VirtualHost configuration
       template:
-        src: ../templates/apache-api.conf.j2
+        src: ../templates/services/apache-api.conf.j2
         dest: /etc/apache2/sites-available/api.conf
         owner: root
         group: root

@@ -1,0 +1,32 @@
+[Unit]
+Description=Grafana
+Documentation=https://grafana.com/docs/
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=notify
+ProtectSystem=strict
+ProtectHome=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ReadWritePaths={{ grafana_data_dir }} /var/log/grafana
+
+User={{ grafana_user }}
+Group={{ grafana_user }}
+
+ExecStart={{ grafana_install_dir }}/bin/grafana-server \
+  --homepath {{ grafana_install_dir }} \
+  --config /etc/grafana.conf \
+  cfg:default.paths.data={{ grafana_data_dir }} \
+  cfg:default.paths.plugins={{ grafana_data_dir }}/plugins \
+  cfg:default.paths.provisioning={{ grafana_data_dir }}/provisioning
+
+Environment="LD_LIBRARY_PATH={{ grafana_install_dir }}/deps"
+
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -22,7 +22,7 @@
 
     - name: Create Apache VirtualHost configuration
       template:
-        src: ../templates/apache-gapi.conf.j2
+        src: ../templates/services/apache-gapi.conf.j2
         dest: /etc/apache2/sites-available/gapi.conf
         owner: root
         group: root

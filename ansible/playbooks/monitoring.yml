@@ -98,7 +98,7 @@
 
     - name: Copy Prometheus configuration
       template:
-        src: ../templates/prometheus.yml.j2
+        src: ../templates/monitoring/prometheus.yml.j2
         dest: "{{ prometheus_config_dir }}/prometheus.yml"
         owner: "{{ prometheus_user }}"
         group: "{{ prometheus_user }}"
@@ -107,7 +107,7 @@
 
     - name: Copy Prometheus alert rules
       template:
-        src: ../templates/prometheus-alerts.yml.j2
+        src: ../templates/monitoring/prometheus-alerts.yml.j2
         dest: "{{ prometheus_config_dir }}/alert-rules.yml"
         owner: "{{ prometheus_user }}"
         group: "{{ prometheus_user }}"
@@ -116,7 +116,7 @@
 
     - name: Create Prometheus systemd service
       template:
-        src: ../templates/prometheus.service.j2
+        src: ../templates/monitoring/prometheus.service.j2
         dest: /etc/systemd/system/prometheus.service
         owner: root
         group: root
@@ -161,7 +161,7 @@
 
     - name: Copy Grafana environment file
       template:
-        src: ../templates/grafana.env.j2
+        src: ../templates/monitoring/grafana.env.j2
         dest: /etc/grafana.env
         owner: root
         group: root
@@ -170,7 +170,7 @@
 
     - name: Copy Grafana datasources config
       template:
-        src: ../templates/grafana-datasources.yml.j2
+        src: ../templates/monitoring/grafana-datasources.yml.j2
         dest: "{{ grafana_data_dir }}/provisioning/datasources/datasources.yml"
         owner: "{{ grafana_user }}"
         group: "{{ grafana_user }}"
@@ -179,7 +179,7 @@
 
     - name: Copy Grafana dashboards config
       template:
-        src: ../templates/grafana-dashboards.yml.j2
+        src: ../templates/monitoring/grafana-dashboards.yml.j2
         dest: "{{ grafana_data_dir }}/provisioning/dashboards.yml"
         owner: "{{ grafana_user }}"
         group: "{{ grafana_user }}"
@@ -188,7 +188,7 @@
 
     - name: Copy Homelab Overview dashboard
       copy:
-        src: ../templates/homelab-overview-dashboard.json.j2
+        src: ../templates/monitoring/homelab-overview-dashboard.json.j2
         dest: "{{ grafana_data_dir }}/provisioning/dashboards/homelab-overview.json"
         owner: "{{ grafana_user }}"
         group: "{{ grafana_user }}"
@@ -197,7 +197,7 @@
 
     - name: Create Grafana systemd service
       template:
-        src: ../templates/grafana.service.j2
+        src: ../templates/monitoring/grafana.service.j2
         dest: /etc/systemd/system/grafana-server.service
         owner: root
         group: root
@@ -216,12 +216,14 @@
         name: prometheus
         state: started
         enabled: yes
+      notify: validate prometheus health
 
     - name: Enable and start Grafana
       systemd:
         name: grafana-server
         state: started
         enabled: yes
+      notify: validate grafana health
 
   handlers:
     - name: reload systemd
@@ -237,6 +239,26 @@
       systemd:
         name: grafana-server
         state: restarted
+
+    - name: validate prometheus health
+      uri:
+        url: "http://localhost:9090/-/healthy"
+        status_code: 200
+      retries: 5
+      delay: 2
+      register: prometheus_health
+      failed_when: prometheus_health.status != 200
+      changed_when: false
+
+    - name: validate grafana health
+      uri:
+        url: "http://localhost:3000/api/health"
+        status_code: 200
+      retries: 5
+      delay: 2
+      register: grafana_health
+      failed_when: grafana_health.status != 200
+      changed_when: false
 
 
 # Configure monitoring on all hosts
@@ -286,7 +308,7 @@
 
     - name: Create node_exporter systemd service
       template:
-        src: ../templates/node-exporter.service.j2
+        src: ../templates/exporters/node-exporter.service.j2
         dest: /etc/systemd/system/node_exporter.service
         owner: root
         group: root
@@ -302,12 +324,21 @@
         name: node_exporter
         state: started
         enabled: yes
+      notify: validate node exporter
 
   handlers:
     - name: restart node_exporter
       systemd:
         name: node_exporter
         state: restarted
+
+    - name: validate node exporter
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 9100
+        delay: 1
+        timeout: 10
+      changed_when: false
 
 
 # Configure MySQL Exporter
@@ -373,7 +404,7 @@
 
     - name: Create .my.cnf for mysqld_exporter
       template:
-        src: ../templates/mysql-exporter.cnf.j2
+        src: ../templates/exporters/mysql-exporter.cnf.j2
         dest: /etc/mysql_exporter.cnf
         owner: "{{ mysql_exporter_user }}"
         group: "{{ mysql_exporter_user }}"
@@ -381,7 +412,7 @@
 
     - name: Create mysql_exporter systemd service
       template:
-        src: ../templates/mysql-exporter.service.j2
+        src: ../templates/exporters/mysql-exporter.service.j2
         dest: /etc/systemd/system/mysql_exporter.service
         owner: root
         group: root
@@ -397,9 +428,18 @@
         name: mysql_exporter
         state: started
         enabled: yes
+      notify: validate mysql exporter
 
   handlers:
     - name: restart mysql_exporter
       systemd:
         name: mysql_exporter
         state: restarted
+
+    - name: validate mysql exporter
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 9104
+        delay: 1
+        timeout: 10
+      changed_when: false

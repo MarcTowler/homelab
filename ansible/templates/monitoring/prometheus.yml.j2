@@ -1,0 +1,73 @@
+global:
+  scrape_interval: 30s
+  scrape_timeout: 10s
+  evaluation_interval: 30s
+  external_labels:
+    cluster: 'homelab'
+    environment: '{{ environment }}'
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "{{ prometheus_config_dir }}/alert-rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:{{ prometheus_port }}']
+
+  # Proxmox Nodes - Node Exporter
+  - job_name: 'proxmox-nodes'
+    static_configs:
+      - targets:
+{% for node in cluster_nodes %}
+          - '{{ node }}.{{ domain_name }}:9100'  # {{ node }}
+{% endfor %}
+        labels:
+          group: 'proxmox'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: '${1}'
+
+  # API Servers
+  - job_name: 'api-servers'
+    static_configs:
+      - targets:
+          - 'api:9100'
+          - 'gapi:9100'
+        labels:
+          group: 'api'
+
+  # MySQL Servers
+  - job_name: 'mysql'
+    static_configs:
+      - targets:
+          - 'db:9104'
+        labels:
+          group: 'database'
+
+  # Homepage/Web Services
+  - job_name: 'web-services'
+    static_configs:
+      - targets:
+          - 'homepage:9100'
+          - 'site:9100'
+          - 'traefik:9100'
+        labels:
+          group: 'web'
+
+  # Optional: Proxmox API Monitoring (requires proxmox_exporter)
+  # - job_name: 'proxmox-api'
+  #   static_configs:
+  #     - targets:
+  #         - 'localhost:8001'
+  #       labels:
+  #         cluster: 'pve'

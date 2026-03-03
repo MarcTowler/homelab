@@ -1,0 +1,46 @@
+---
+# Monitoring Stack Variables
+# Configure these values for your environment
+
+# Prometheus Configuration
+prometheus_port: 9090
+prometheus_retention_days: 90
+prometheus_scrape_interval: 30s
+prometheus_scrape_timeout: 10s
+prometheus_evaluation_interval: 30s
+
+# Grafana Configuration
+grafana_port: 3000
+grafana_domain: "grafana.{{ domain_name | default('local') }}"
+vault_grafana_admin_password: "{{ vault_grafana_admin_password_value }}"
+
+# Node Exporter Configuration
+node_exporter_port: 9100
+node_exporter_version: "1.7.0"
+
+# MySQL Exporter Configuration
+mysql_exporter_port: 9104
+mysql_exporter_version: "0.15.0"
+vault_mysql_prometheus_password: "{{ vault_mysql_prometheus_password_value }}"
+
+# Alert thresholds
+alerts:
+  cpu_threshold: 80
+  memory_threshold: 85
+  disk_threshold: 85
+  service_down_timeout: 3m
+
+# Proxmox Cluster Nodes (for Prometheus scrape config)
+cluster_nodes:
+  - arcanine
+  - growlithe
+  - fuecoco
+
+# Domain name for FQDN resolution
+domain_name: "itslit.me.uk"
+
+# Data Source Configuration
+mysql_host: "db.itslit.me.uk"  # MySQL server hostname/FQDN
+
+# Dashboard Configuration
+grafana_dashboard_folder: "/var/lib/grafana/provisioning/dashboards"

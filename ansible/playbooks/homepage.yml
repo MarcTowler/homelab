@@ -115,13 +115,13 @@
 
     - name: Copy systemd service file
       template:
-        src: ../templates/homepage.service.j2
+        src: ../templates/services/homepage.service.j2
         dest: /etc/systemd/system/homepage.service
         mode: '0644'
 
     - name: Deploy services.yaml
       template:
-        src: ../templates/homepage-services.yaml.j2
+        src: ../templates/services/homepage-services.yaml.j2
         dest: /var/www/homepage/config/services.yaml
 
     - name: Reload systemd configuration

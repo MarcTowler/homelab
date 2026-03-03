@@ -1,0 +1,18 @@
+[Unit]
+Description=Prometheus Node Exporter
+After=network.target
+
+[Service]
+Type=simple
+User={{ node_exporter_user }}
+Group={{ node_exporter_user }}
+ExecStart={{ node_exporter_install_dir }}/node_exporter \
+    --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/) \
+    --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|cgroup|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|squashfs|sysfs|tracefs)$$ \
+    --collector.netdev.device-exclude=^(veth.*|docker.*|br.*|virbr.*|lo)$$ \
+    --web.listen-address=:{{ node_exporter_port }}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
