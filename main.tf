@@ -5,21 +5,23 @@ resource "proxmox_virtual_environment_hosts" "nodes" {
   node_name = each.value.node_name
 
   entry {
-    address = each.value.ip_address
-
-    hostnames = [
-      each.value.node_name,
-      "${each.value.node_name}.${var.domain_name}"
-    ]
-  }
-
-  entry {
     address = "127.0.0.1"
 
     hostnames = [
       "localhost",
       "localhost.localdomain"
     ]
+  }
+  
+  dynamic "entry" {
+    for_each = var.nodes
+    content {
+      address = entry.value.ip_address
+      hostnames = [
+        entry.value.node_name,
+        "${entry.value.node_name}.${var.domain_name}"
+      ]
+    }
   }
 }
 
