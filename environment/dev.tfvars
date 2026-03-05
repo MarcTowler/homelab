@@ -8,14 +8,14 @@ nodes = {
     node_name  = "growlithe"
     ip_address = "10.0.1.111"
   }
+  pawmot = {
+    node_name  = "pawmot"
+    ip_address = "10.0.1.112"
+  }
   fuecoco = {
     node_name  = "fuecoco"
     ip_address = "10.0.1.113"
   }
-   pawmot = {
-     node_name  = "pawmot"
-     ip_address = "10.0.1.112"
-   }
   # murkrow = {
   #   node_name  = "murkrow"
   #   ip_address = "10.0.1.114"
