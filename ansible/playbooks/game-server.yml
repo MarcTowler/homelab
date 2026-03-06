@@ -1,0 +1,48 @@
+- name: Install AMP Game Panel
+  hosts: game-server
+  become: yes
+  tasks:
+    # Load vault secrets
+    - name: Load vault secrets
+      include_vars:
+        file: ../inventory/secrets.yml
+    - name: Ensure dependencies are present
+      apt:
+        name: [curl, wget, socat, software-properties-common, dirmngr]
+        state: present
+
+    - name: Fix System Locale for AMP
+      become: yes
+      shell: |
+        locale-gen en_GB.UTF-8
+        update-locale LANG=en_GB.UTF-8 LC_ALL=en_GB.UTF-8
+      register: locale_fix
+
+    - name: Run AMP Unattended Installer
+      become: yes
+      ansible.builtin.shell: "bash <(wget -qO- getamp.sh)"
+      args:
+        executable: /bin/bash
+      environment:
+        # Essential for Unattended Mode
+        USE_ANSWERS: "y"
+        ANSWER_AMPUSER: "admin"
+        ANSWER_AMPPASS: {{ amp_password }}
+        ANSWER_SYSPASSWORD: {{ amp_syspassword }}
+        
+        # Feature Selections
+        ANSWER_INSTALLJAVA: "y"       # Required for ATM10
+        ANSWER_INSTALLSRCDSLIBS: "y"  # Required for Steam games like Satisfactory
+        ANSWER_INSTALLDOCKER: "y"    # Recommended for security/isolation
+        
+        # Locale fix from previous step
+        LANG: "en_GB.UTF-8"
+        LC_ALL: "en_GB.UTF-8"
+      async: 600
+      poll: 0
+      register: amp_install
+
+    - name: Wait for AMP to be ready
+      wait_for:
+        port: 8080
+        delay: 5
