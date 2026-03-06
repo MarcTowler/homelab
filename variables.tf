@@ -105,6 +105,11 @@ variable "containers" {
     datastore_id = optional(string, "local-lvm")
     disk_size    = optional(number, 20)
     os_type      = optional(string, "ubuntu")
+    unprivileged = optional(bool, true)
+    features = optional(object({
+      nesting = optional(bool, false)
+      keyctl  = optional(bool, false)
+    }), {})
     mount_points = optional(list(object({
       volume = string
       size   = string

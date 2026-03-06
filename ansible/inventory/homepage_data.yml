@@ -1,43 +1,49 @@
 "homepage_containers":
   "api":
     "icon": "php.png"
-    "ip": "10.0.1.26"
+    "ip": "10.0.1.47"
     "name": "api"
     "node": "arcanine"
     "vmid": 1001
   "db":
     "icon": "mariadb.png"
-    "ip": "10.0.1.66"
+    "ip": "10.0.1.196"
     "name": "db"
     "node": "arcanine"
     "vmid": 1000
+  "game-server":
+    "icon": "mdi-container"
+    "ip": "10.0.1.41"
+    "name": "game-server"
+    "node": "pawmot"
+    "vmid": 1007
   "gapi":
     "icon": "php.png"
-    "ip": "10.0.1.48"
+    "ip": "10.0.1.38"
     "name": "gapi"
     "node": "arcanine"
     "vmid": 1002
   "homepage":
     "icon": "homepage.png"
-    "ip": "10.0.1.215"
+    "ip": "10.0.1.178"
     "name": "homepage"
     "node": "arcanine"
     "vmid": 1004
   "monitoring":
     "icon": "grafana.png"
-    "ip": "10.0.1.132"
+    "ip": "10.0.1.73"
     "name": "monitoring"
     "node": "arcanine"
     "vmid": 1006
   "site":
     "icon": "php.png"
-    "ip": "10.0.1.98"
+    "ip": "10.0.1.166"
     "name": "site"
     "node": "arcanine"
     "vmid": 1003
   "traefik":
     "icon": "traefik.png"
-    "ip": "10.0.1.222"
+    "ip": "10.0.1.165"
     "name": "traefik"
     "node": "arcanine"
     "vmid": 1005

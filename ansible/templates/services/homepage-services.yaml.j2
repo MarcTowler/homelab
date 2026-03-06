@@ -10,10 +10,10 @@
     - Arcanine:
         icon: proxmox.png
         href: "https://arcanine.itslit.me.uk:8006"
-        ping: "https://10.0.1.150"
+        ping: "https://10.0.1.110"
         widget:
           type: proxmox
-          url: https://10.0.1.150:8006
+          url: https://arcanine.itslit.me.uk:8006
           username: Terraform@pam!api
           password: {{ arcanine_proxmox_token_secret }}
           node: arcanine
@@ -23,20 +23,30 @@
         ping: "https://10.0.1.113"
         widget:
           type: proxmox
-          url: https://10.0.1.113:8006
+          url: https://fuecoco.itslit.me.uk:8006
           username: Terraform@pam!api
           password: {{ fuecoco_proxmox_token_secret }}
           node: fuecoco
     - Growlithe:
         icon: proxmox.png
         href: "https://growlithe.itslit.me.uk:8006"
-        ping: "https://10.0.1.233"
+        ping: "https://10.0.1.111"
         widget:
           type: proxmox
-          url: https://10.0.1.233:8006
+          url: https://growlithe.itslit.me.uk:8006
           username: Terraform@pam!api
           password: {{ growlithe_proxmox_token_secret }}
           node: growlithe
+    - Pawmot:
+        icon: proxmox.png
+        href: "https://pawmot.itslit.me.uk:8006"
+        ping: "https://10.0.1.112"
+        widget:
+          type: proxmox
+          url: https://pawmot.itslit.me.uk:8006
+          username: Terraform@pam!api
+          password: {{ pawmot_proxmox_token_secret }}
+          node: pawmot
 
 - Deployed Containers:
 {% for key, item in homepage_containers.items() %}

@@ -9,7 +9,7 @@ WorkingDirectory=/var/www/homepage
 Environment=HOMEPAGE_ALLOWED_HOSTS=homepage.itslit.me.uk:3000
 
 # Fix: Use /usr/bin/pnpm (or the result of 'which pnpm')
-ExecStart=/usr/bin/pnpm start
+ExecStart={{ pnpm_bin_path }} start
 
 Restart=always
 RestartSec=5

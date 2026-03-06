@@ -14,8 +14,10 @@ resource "proxmox_virtual_environment_container" "this" {
   }
 
   # newer linux distributions require unprivileged user namespaces
-  unprivileged = true
+  unprivileged = each.value.unprivileged
   features {
+    nesting = each.value.features.nesting
+    keyctl  = each.value.features.keyctl
   }
 
   initialization {
@@ -52,7 +54,7 @@ resource "proxmox_virtual_environment_container" "this" {
   }
 
   operating_system {
-    template_file_id = proxmox_virtual_environment_download_file.lxc-image[each.value.image].id
+    template_file_id = proxmox_virtual_environment_download_file.lxc-image["${each.value.node}-${each.value.image}"].id
     type             = each.value.os_type
   }
 
@@ -83,13 +85,13 @@ resource "proxmox_virtual_environment_container" "this" {
 }
 
 resource "proxmox_virtual_environment_download_file" "lxc-image" {
-  for_each     = var.images
-  node_name    = var.node
+  for_each     = local.image_node_matrix
+  node_name    = each.value.node_name
   content_type = "vztmpl"
   datastore_id = "local"
-  file_name    = each.value.filename
-  url          = each.value.url
-  overwrite    = each.value.overwrite
+  file_name    = each.value.image.filename
+  url          = each.value.image.url
+  overwrite    = each.value.image.overwrite
 }
 
 resource "random_password" "ubuntu_container_password" {
