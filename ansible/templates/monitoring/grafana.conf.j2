@@ -5,8 +5,10 @@ plugins = {{ grafana_data_dir }}/plugins
 provisioning = {{ grafana_data_dir }}/provisioning
 
 [server]
-root_url = http://{{ grafana_domain | default('localhost:' + grafana_port|string) }}
+# Bind to all interfaces to be accessible from outside the container
+http_addr = 0.0.0.0
 http_port = {{ grafana_port }}
+root_url = http://{{ grafana_domain | default('localhost:' + grafana_port|string) }}
 
 [security]
 admin_user = admin
@@ -14,6 +16,11 @@ admin_password = {{ vault_grafana_admin_password }}
 
 [users]
 allow_sign_up = false
+
+[database]
+# Use sqlite by default
+type = sqlite3
+path = {{ grafana_data_dir }}/grafana.db
 
 [log]
 level = info

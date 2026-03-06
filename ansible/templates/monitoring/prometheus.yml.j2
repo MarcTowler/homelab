@@ -37,30 +37,30 @@ scrape_configs:
         target_label: instance
         replacement: '${1}'
 
-  # API Servers
+  # API Servers (use FQDN for better DNS resolution)
   - job_name: 'api-servers'
     static_configs:
       - targets:
-          - 'api:9100'
-          - 'gapi:9100'
+          - 'api.{{ domain_name }}:9100'
+          - 'gapi.{{ domain_name }}:9100'
         labels:
           group: 'api'
 
-  # MySQL Servers
+  # MySQL Servers (use FQDN)
   - job_name: 'mysql'
     static_configs:
       - targets:
-          - 'db:9104'
+          - '{{ mysql_host | default("db." + domain_name) }}:9104'
         labels:
           group: 'database'
 
-  # Homepage/Web Services
+  # Homepage/Web Services (use FQDN)
   - job_name: 'web-services'
     static_configs:
       - targets:
-          - 'homepage:9100'
-          - 'site:9100'
-          - 'traefik:9100'
+          - 'homepage.{{ domain_name }}:9100'
+          - 'site.{{ domain_name }}:9100'
+          - 'traefik.{{ domain_name }}:9100'
         labels:
           group: 'web'
 

@@ -16,6 +16,9 @@ ReadWritePaths={{ grafana_data_dir }} /var/log/grafana
 User={{ grafana_user }}
 Group={{ grafana_user }}
 
+# Load environment variables
+EnvironmentFile=/etc/grafana.env
+
 ExecStart={{ grafana_install_dir }}/bin/grafana-server \
   --homepath {{ grafana_install_dir }} \
   --config /etc/grafana.conf \

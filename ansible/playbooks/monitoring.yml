@@ -160,6 +160,15 @@
         mode: '0755'
         recurse: yes
 
+    - name: Copy Grafana configuration file
+      template:
+        src: ../templates/monitoring/grafana.conf.j2
+        dest: /etc/grafana.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: restart grafana
+
     - name: Copy Grafana environment file
       template:
         src: ../templates/monitoring/grafana.env.j2

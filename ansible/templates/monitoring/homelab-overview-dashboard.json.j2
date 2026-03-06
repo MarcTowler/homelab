@@ -89,7 +89,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{instance=~\".+\\..+\", mode=\"idle\"}[5m])) * 100)",
           "legendFormat": "{{ instance }}",
           "refId": "A"
         }
@@ -166,7 +166,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+          "expr": "(1 - (node_memory_MemAvailable_bytes{instance=~\".+\\..+\"} / node_memory_MemTotal_bytes{instance=~\".+\\..+\"})) * 100",
           "legendFormat": "{{ instance }}",
           "refId": "A"
         }
@@ -243,7 +243,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "(1 - (node_filesystem_avail_bytes{fstype!~\"tmpfs|fuse.lxcfs|squashfs|vfat\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|fuse.lxcfs|squashfs|vfat\"})) * 100",
+          "expr": "(1 - (node_filesystem_avail_bytes{instance=~\".+\\..+\", fstype!=~\"tmpfs|fuse.lxcfs|squashfs|vfat\"} / node_filesystem_size_bytes{instance=~\".+\\..+\", fstype!=~\"tmpfs|fuse.lxcfs|squashfs|vfat\"})) * 100",
           "legendFormat": "{{ instance }} - {{ mountpoint }}",
           "refId": "A"
         }
@@ -299,7 +299,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "count by (instance) (node_cpu_seconds_total{mode=\"system\"})",
+          "expr": "count by (instance) (node_cpu_seconds_total{instance=~\".+\\..+\", mode=\"system\"})",
           "legendFormat": "{{ instance }}",
           "refId": "A"
         }
@@ -516,7 +516,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "up",
+          "expr": "up{instance=~\".+\\..+\"}",
           "format": "heatmap",
           "legendFormat": "{{ instance }} - {{ job }}",
           "refId": "A"
@@ -594,7 +594,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "rate(node_network_receive_bytes_total[5m])",
+          "expr": "rate(node_network_receive_bytes_total{instance=~\".+\\..+\"}[5m])",
           "legendFormat": "{{ instance }} RX",
           "refId": "A"
         }
@@ -671,7 +671,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "rate(node_network_transmit_bytes_total[5m])",
+          "expr": "rate(node_network_transmit_bytes_total{instance=~\".+\\..+\"}[5m])",
           "legendFormat": "{{ instance }} TX",
           "refId": "A"
         }

@@ -27,8 +27,8 @@
         # Essential for Unattended Mode
         USE_ANSWERS: "y"
         ANSWER_AMPUSER: "admin"
-        ANSWER_AMPPASS: {{ amp_password }}
-        ANSWER_SYSPASSWORD: {{ amp_syspassword }}
+        ANSWER_AMPPASS: "{{ amp_password }}"
+        ANSWER_SYSPASSWORD: "{{ amp_syspassword }}"
         
         # Feature Selections
         ANSWER_INSTALLJAVA: "y"       # Required for ATM10

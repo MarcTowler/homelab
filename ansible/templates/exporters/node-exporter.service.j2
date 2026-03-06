@@ -1,6 +1,8 @@
 [Unit]
 Description=Prometheus Node Exporter
-After=network.target
+Documentation=https://prometheus.io/docs/guides/node-exporter/
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
@@ -11,8 +13,10 @@ ExecStart={{ node_exporter_install_dir }}/node_exporter \
     --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|cgroup|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|squashfs|sysfs|tracefs)$$ \
     --collector.netdev.device-exclude=^(veth.*|docker.*|br.*|virbr.*|lo)$$ \
     --web.listen-address=:{{ node_exporter_port }}
-Restart=on-failure
-RestartSec=5
+Restart=always
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
 
 [Install]
 WantedBy=multi-user.target
