@@ -16,10 +16,10 @@ nodes = {
     node_name  = "fuecoco"
     ip_address = "10.0.1.113"
   }
-  # murkrow = {
-  #   node_name  = "murkrow"
-  #   ip_address = "10.0.1.114"
-  # }
+  murkrow = {
+    node_name  = "murkrow"
+    ip_address = "10.0.1.114"
+  }
 }
 
 #Virtual Machines
