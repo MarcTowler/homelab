@@ -115,7 +115,8 @@ variable "containers" {
       size   = string
       path   = string
     })), [])
-    tags = list(string)
+    tags     = list(string)
+    exporters = optional(list(string), ["node"])
   }))
   default = {}
 }

@@ -9,6 +9,9 @@
 - name: Configure MySQL server
   import_playbook: mysql-server.yml
 
+- name: Deploy monitoring exporters
+  import_playbook: exporter-deployment.yml
+
 - name: Configure API server
   import_playbook: api.yml
 

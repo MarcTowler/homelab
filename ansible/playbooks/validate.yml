@@ -22,6 +22,12 @@
       failed_when: prometheus_check.status != 200
       changed_when: false
 
+    - name: Wait for Prometheus to discover and scrape targets
+      pause:
+        seconds: 35
+      vars:
+        ansible_connection: local
+
     - name: Validate Prometheus targets status
       uri:
         url: "{{ prometheus_url }}/api/v1/targets"
@@ -29,6 +35,9 @@
         return_content: yes
       register: prometheus_targets
       changed_when: false
+      retries: 3
+      delay: 10
+      until: prometheus_targets.json.data.activeTargets | length > 0
 
     - name: Parse Prometheus targets
       set_fact:
@@ -44,9 +53,9 @@
           Dropped Targets: {{ inactive_targets }}
       changed_when: false
 
-    - name: Fail if no active targets
+    - name: Fail if no active targets after retries
       fail:
-        msg: "ERROR: No active Prometheus targets found!"
+        msg: "ERROR: No active Prometheus targets found after waiting!"
       when: active_targets | int == 0
 
     - name: Validate Grafana is healthy

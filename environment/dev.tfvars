@@ -49,7 +49,8 @@ containers = {
         path   = "/mnt/volume"
       }
     ]
-    tags = ["database", "ubuntu"]
+    tags      = ["database", "ubuntu"]
+    exporters = ["node", "mysql"]
   },
   api = {
     lxc_id     = 1001
@@ -59,6 +60,7 @@ containers = {
     ip_address = "dhcp"
     image      = "ubuntu_2204"
     tags       = ["php", "ubuntu"]
+    exporters  = ["node"]
   },
   gapi = {
     lxc_id     = 1002
@@ -68,6 +70,7 @@ containers = {
     ip_address = "dhcp"
     image      = "ubuntu_2204"
     tags       = ["php", "ubuntu"]
+    exporters  = ["node"]
   },
   site = {
     lxc_id     = 1003
@@ -77,6 +80,7 @@ containers = {
     ip_address = "dhcp"
     image      = "ubuntu_2204"
     tags       = ["php", "ubuntu"]
+    exporters  = ["node"]
   },
   homepage = {
     lxc_id     = 1004
@@ -86,6 +90,7 @@ containers = {
     ip_address = "dhcp"
     image      = "ubuntu_2204"
     tags       = ["npm", "ubuntu"]
+    exporters  = ["node"]
   },
   traefik = {
     lxc_id     = 1005
@@ -95,6 +100,7 @@ containers = {
     ip_address = "dhcp"
     image      = "ubuntu_2204"
     tags       = ["traefik", "ubuntu"]
+    exporters  = ["node"]
   },
   monitoring = {
     lxc_id     = 1006
@@ -115,7 +121,8 @@ containers = {
         path   = "/var/lib/grafana"
       }
     ]
-    tags = ["monitoring", "prometheus", "grafana", "ubuntu"]
+    tags      = ["monitoring", "prometheus", "grafana", "ubuntu"]
+    exporters = ["node"]
   },
   game-server = {
     lxc_id     = 1007
@@ -135,7 +142,8 @@ containers = {
         path   = "/mnt/game-data"
       }
     ]
-    tags = ["game-server", "ubuntu"]
+    tags      = ["game-server", "ubuntu"]
+    exporters = ["node"]
   }
 }
 

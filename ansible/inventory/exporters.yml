@@ -1,0 +1,63 @@
+"monitored_hosts":
+  "api":
+    "exporters":
+    - "node"
+    "hostname": "api"
+    "ip": "10.0.1.47"
+  "db":
+    "exporters":
+    - "node"
+    - "mysql"
+    "hostname": "db"
+    "ip": "10.0.1.196"
+  "game-server":
+    "exporters":
+    - "node"
+    "hostname": "game-server"
+    "ip": "10.0.1.41"
+  "gapi":
+    "exporters":
+    - "node"
+    "hostname": "gapi"
+    "ip": "10.0.1.38"
+  "homepage":
+    "exporters":
+    - "node"
+    "hostname": "homepage"
+    "ip": "10.0.1.178"
+  "monitoring":
+    "exporters":
+    - "node"
+    "hostname": "monitoring"
+    "ip": "10.0.1.73"
+  "site":
+    "exporters":
+    - "node"
+    "hostname": "site"
+    "ip": "10.0.1.166"
+  "traefik":
+    "exporters":
+    - "node"
+    "hostname": "traefik"
+    "ip": "10.0.1.165"
+"proxmox_nodes_list":
+- "exporters":
+  - "node"
+  "hostname": "arcanine"
+  "ip": "10.0.1.110"
+- "exporters":
+  - "node"
+  "hostname": "fuecoco"
+  "ip": "10.0.1.113"
+- "exporters":
+  - "node"
+  "hostname": "growlithe"
+  "ip": "10.0.1.111"
+- "exporters":
+  - "node"
+  "hostname": "murkrow"
+  "ip": "10.0.1.114"
+- "exporters":
+  - "node"
+  "hostname": "pawmot"
+  "ip": "10.0.1.112"

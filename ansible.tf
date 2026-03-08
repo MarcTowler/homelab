@@ -7,6 +7,7 @@ resource "local_file" "ansible_inventory" {
         ansible_ssh_common_args : "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
       }
       children = {
+        # Service-based groups (existing)
         api_servers = {
           hosts = {
             for name, cfg in var.containers :
@@ -43,6 +44,38 @@ resource "local_file" "ansible_inventory" {
             }
           }
         }
+        
+        # Exporter-based groups (NEW)
+        node_exporters = {
+          hosts = {
+            for name, cfg in var.containers :
+            name => {
+              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_user = "root"
+            } if contains(cfg.exporters, "node")
+          }
+        }
+        mysql_exporters = {
+          hosts = {
+            for name, cfg in var.containers :
+            name => {
+              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_user = "root"
+            } if contains(cfg.exporters, "mysql")
+          }
+        }
+        
+        # Proxmox node exporters
+        proxmox_node_exporters = {
+          hosts = {
+            for name, cfg in var.nodes :
+            name => {
+              ansible_host = cfg.ip_address
+              ansible_user = "root"
+            }
+          }
+        }
+        
         ungrouped = {
           vars = {
             ansible_port               = 22
@@ -167,4 +200,32 @@ resource "local_file" "homepage_vars" {
       }
     }
   })
+}
+
+# Generate exporters mapping for Prometheus configuration
+resource "local_file" "exporters_mapping" {
+  filename = "${path.module}/ansible/inventory/exporters.yml"
+
+  content = yamlencode({
+    monitored_hosts = {
+      for name, cfg in var.containers :
+      name => {
+        hostname = name
+        ip       = proxmox_virtual_environment_container.this[name].ipv4.veth0
+        exporters = cfg.exporters
+      }
+    }
+    proxmox_nodes_list = [
+      for name, cfg in var.nodes :
+      {
+        hostname = cfg.node_name
+        ip       = cfg.ip_address
+        exporters = ["node"]
+      }
+    ]
+  })
+
+  depends_on = [
+    proxmox_virtual_environment_container.this
+  ]
 }

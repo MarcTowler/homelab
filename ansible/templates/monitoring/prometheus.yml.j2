@@ -23,46 +23,42 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:{{ prometheus_port }}']
 
-  # Proxmox Nodes - Node Exporter
-  - job_name: 'proxmox-nodes'
+  # Dynamic Node Exporters - All hosts with node exporter enabled
+  - job_name: 'node-exporters'
     static_configs:
+{% if groups['node_exporters'] is defined %}
       - targets:
-{% for node in cluster_nodes %}
-          - '{{ node }}.{{ domain_name }}:9100'  # {{ node }}
+{% for host in groups['node_exporters'] %}
+          - '{{ host }}.{{ domain_name }}:9100'
 {% endfor %}
         labels:
-          group: 'proxmox'
+          group: 'infrastructure'
+{% endif %}
+{% if groups['proxmox_node_exporters'] is defined %}
+{% for host in groups['proxmox_node_exporters'] %}
+      - targets:
+          - '{{ hostvars[host].ansible_host }}:9100'
+        labels:
+          group: 'infrastructure'
+          instance: '{{ host }}.{{ domain_name }}'
+{% endfor %}
+{% endif %}
+
+  # Dynamic MySQL Exporters - All hosts with mysql exporter enabled
+{% if groups.get('mysql_exporters', []) | length > 0 %}
+  - job_name: 'mysql-exporters'
+    static_configs:
+      - targets:
+{% for host in groups['mysql_exporters'] %}
+          - '{{ host }}.{{ domain_name }}:9104'
+{% endfor %}
+        labels:
+          group: 'database'
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: '${1}'
-
-  # API Servers (use FQDN for better DNS resolution)
-  - job_name: 'api-servers'
-    static_configs:
-      - targets:
-          - 'api.{{ domain_name }}:9100'
-          - 'gapi.{{ domain_name }}:9100'
-        labels:
-          group: 'api'
-
-  # MySQL Servers (use FQDN)
-  - job_name: 'mysql'
-    static_configs:
-      - targets:
-          - '{{ mysql_host | default("db." + domain_name) }}:9104'
-        labels:
-          group: 'database'
-
-  # Homepage/Web Services (use FQDN)
-  - job_name: 'web-services'
-    static_configs:
-      - targets:
-          - 'homepage.{{ domain_name }}:9100'
-          - 'site.{{ domain_name }}:9100'
-          - 'traefik.{{ domain_name }}:9100'
-        labels:
-          group: 'web'
+{% endif %}
 
   # Optional: Proxmox API Monitoring (requires proxmox_exporter)
   # - job_name: 'proxmox-api'
