@@ -1,0 +1,59 @@
+---
+# GitHub Actions Runner Configuration Variables
+
+# Runner user and paths
+runner_user: github
+runner_group: github
+runner_home: /var/lib/github-actions-runner
+runner_install_dir: /opt/actions-runner
+
+# Runner version (check https://github.com/actions/runner/releases for latest)
+runner_version: "2.311.0"
+
+# Systemd service configuration
+runner_service_name: github-runner
+runner_service_description: "GitHub Actions Runner Service"
+
+# Resource constraints for runner service
+runner_memory_limit: "8G"
+runner_cpu_quota: "400%"
+
+# Node exporter for monitoring GitHub runner metrics
+node_exporter_version: "1.7.0"
+node_exporter_port: 9100
+
+# GitHub API Configuration for automated token generation
+# Store the actual token in ansible/inventory/secrets.yml as:
+# github_pat: "your_personal_access_token"
+# Example scopes needed: admin:org_hook, admin:repo_hook, repo, workflow
+github_api_url: "https://api.github.com"
+
+# Runner registration configuration
+# Define which repositories/organizations to register the runner with
+# Format options:
+#   - repo: {owner}/{repo}    # For personal repos
+#   - org: {organization}     # For organization repos
+# Update this in your dev.tfvars or pass via -e flag
+github_runner_registrations: 
+  - type: "org"
+    value: "ItsLit-Media-and-Development"
+    labels: "ubuntu,docker,linux,shared,dependabot"
+# Example (uncomment and modify for your setup):
+# github_runner_registrations:
+#   - type: "repo"
+#     value: "marctowler/my-project"
+#     labels: "ubuntu,docker,linux"
+#   - type: "org"
+#     value: "my-organization"
+#     labels: "ubuntu,docker,linux,shared"
+
+# Runner naming
+github_runner_name: "{{ inventory_hostname }}"
+github_runner_work_dir: "{{ runner_home }}/work"
+
+# Auto-start service after configuration
+github_runner_autostart: true
+
+# Idempotency: Check if already registered before re-registering
+github_runner_check_registration: true
+

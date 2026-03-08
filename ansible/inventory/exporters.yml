@@ -20,6 +20,16 @@
     - "node"
     "hostname": "gapi"
     "ip": "10.0.1.38"
+  "github-runner":
+    "exporters":
+    - "node"
+    "hostname": "github-runner"
+    "ip": "10.0.1.182"
+  "github-runner-personal":
+    "exporters":
+    - "node"
+    "hostname": "github-runner-personal"
+    "ip": "10.0.1.131"
   "homepage":
     "exporters":
     - "node"

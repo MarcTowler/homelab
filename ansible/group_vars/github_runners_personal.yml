@@ -1,0 +1,52 @@
+---
+# GitHub Actions Runner Configuration Variables (Personal Repos)
+
+# Runner user and paths
+runner_user: github
+runner_group: github
+runner_home: /var/lib/github-actions-runner
+runner_install_dir: /opt/actions-runner
+
+# Runner version (check https://github.com/actions/runner/releases for latest)
+runner_version: "2.311.0"
+
+# Systemd service configuration
+runner_service_name: github-runner
+runner_service_description: "GitHub Actions Runner Service"
+
+# Resource constraints for runner service
+runner_memory_limit: "8G"
+runner_cpu_quota: "400%"
+
+# Node exporter for monitoring GitHub runner metrics
+node_exporter_version: "1.7.0"
+node_exporter_port: 9100
+
+# GitHub API Configuration for automated token generation
+# Uses personal PAT for personal repo runner registration
+# Store in ansible/inventory/secrets.yml as:
+# github_pat_personal: "your_token"
+github_api_url: "https://api.github.com"
+github_pat: "{{ github_pat_personal }}"
+
+# Runner registration configuration for personal repositories
+# GitHub runners support ONE scope per runner - this one is for personal repos
+github_runner_registrations: 
+  - type: "repo"
+    value: "marctowler/homelab"
+    labels: "ubuntu,docker,linux"
+  - type: "repo"
+    value: "marctowler/LitBot"
+    labels: "ubuntu,docker,linux"
+  - type: "repo"
+    value: "marctowler/Elrakis.NET"
+    labels: "ubuntu,docker,linux"
+
+# Runner naming
+github_runner_name: "{{ inventory_hostname }}"
+github_runner_work_dir: "{{ runner_home }}/work"
+
+# Check if runner is already registered before running registration
+# Use this flag to prevent re-registration on every playbook run
+# Set to 'false' to force re-registration: ansible-playbook playbooks/github-runner.yml -e github_runner_check_registration=false
+github_runner_check_registration: true

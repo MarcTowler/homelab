@@ -1,0 +1,301 @@
+---
+# GitHub Actions Runner Deployment Playbook
+# FULLY AUTOMATED deployment with token generation via GitHub API
+# Supports both personal and organization repositories
+
+- name: Deploy GitHub Actions Runners
+  hosts: github_runners_personal
+  gather_facts: yes
+  become: yes
+
+  vars:
+    runner_config_file: "{{ runner_install_dir }}/.runner"
+
+  pre_tasks:
+    - name: Load vault secrets
+      include_vars:
+        file: ../inventory/secrets.yml
+
+    - name: Load github runner group variables
+      include_vars:
+        file: ../group_vars/github_runners_personal.yml
+
+    - name: Validate GitHub PAT is provided for auto-registration
+      assert:
+        that:
+          - github_pat is defined
+          - github_pat | length > 0
+        fail_msg: "github_pat must be defined in secrets.yml for automated registration"
+      when: github_runner_registrations | length > 0
+
+  tasks:
+    # System preparation
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+          - jq
+          - build-essential
+          - libssl-dev
+          - libffi-dev
+          - python3-dev
+          - python3-pip
+          - python3-venv
+          - docker.io
+          - docker-compose
+        state: present
+
+    # Create runner user
+    - name: Create github runner user
+      user:
+        name: "{{ runner_user }}"
+        shell: /bin/bash
+        home: "{{ runner_home }}"
+        createhome: yes
+        state: present
+
+    - name: Add runner user to docker group
+      user:
+        name: "{{ runner_user }}"
+        groups: docker
+        append: yes
+
+    # Create directory structure
+    - name: Create runner install directory
+      file:
+        path: "{{ runner_install_dir }}"
+        state: directory
+        owner: "{{ runner_user }}"
+        group: "{{ runner_group }}"
+        mode: '0755'
+
+    - name: Create runner work directory
+      file:
+        path: "{{ runner_home }}/work"
+        state: directory
+        owner: "{{ runner_user }}"
+        group: "{{ runner_group }}"
+        mode: '0755'
+
+    # Core runtime dependencies for GitHub Actions
+    - name: Install GitHub Actions runner prerequisites
+      shell: |
+        apt-get update
+        apt-get install -y libicu70 zlib1g
+      changed_when: false
+
+    # Download and configure GitHub Actions Runner
+    - name: Check if runner already installed
+      stat:
+        path: "{{ runner_install_dir }}/run.sh"
+      register: runner_installed
+
+    - name: Download GitHub Actions Runner
+      shell: |
+        cd {{ runner_install_dir }}
+        sudo -u {{ runner_user }} wget -q https://github.com/actions/runner/releases/download/v{{ runner_version }}/actions-runner-linux-x64-{{ runner_version }}.tar.gz
+        sudo -u {{ runner_user }} tar xzf actions-runner-linux-x64-{{ runner_version }}.tar.gz
+        rm actions-runner-linux-x64-{{ runner_version }}.tar.gz
+      args:
+        creates: "{{ runner_install_dir }}/run.sh"
+
+    - name: Set permissions on runner directory
+      file:
+        path: "{{ runner_install_dir }}"
+        owner: "{{ runner_user }}"
+        group: "{{ runner_group }}"
+        mode: '0755'
+        recurse: yes
+
+    # Create systemd service file
+    - name: Create github runner systemd service
+      template:
+        src: ../templates/services/github-runner.service.j2
+        dest: /etc/systemd/system/github-runner.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: reload systemd
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    # Check if already registered
+    - name: Check if runner is already registered
+      stat:
+        path: "{{ runner_config_file }}"
+      register: runner_config_exists
+
+    # AUTOMATED GitHub registration via API
+    - name: Automated runner registration
+      block:
+        # Get registration tokens for each scope
+        - name: Get registration token for repositories
+          shell: |
+            curl -s -X POST \
+              -H "Authorization: token {{ github_pat }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "{{ github_api_url }}/repos/{{ item.value }}/actions/runners/registration-token" \
+              | jq -r '.token'
+          register: repo_tokens_result
+          loop: "{{ github_runner_registrations | selectattr('type', 'equalto', 'repo') | list }}"
+          loop_control:
+            label: "{{ item.type }}: {{ item.value }}"
+          no_log: true
+
+        - name: Get registration token for organizations
+          shell: |
+            curl -s -X POST \
+              -H "Authorization: token {{ github_pat }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "{{ github_api_url }}/orgs/{{ item.value }}/actions/runners/registration-token" \
+              | jq -r '.token'
+          register: org_tokens_result
+          loop: "{{ github_runner_registrations | selectattr('type', 'equalto', 'org') | list }}"
+          loop_control:
+            label: "{{ item.type }}: {{ item.value }}"
+          no_log: true
+
+        # Register with repositories
+        - name: Register runner with repositories
+          block:
+            - name: Parse repo token results
+              set_fact:
+                repo_registrations: "{{ repo_registrations | default([]) + [item.0 | combine({'token': item.1.stdout})] }}"
+              loop: "{{ (github_runner_registrations | selectattr('type', 'equalto', 'repo') | list) | zip(repo_tokens_result.results) | list }}"
+
+            - name: Register with each repository
+              shell: |
+                cd {{ runner_install_dir }}
+                sudo -u {{ runner_user }} ./config.sh \
+                  --unattended \
+                  --url "https://github.com/{{ item.value }}" \
+                  --token "{{ item.token }}" \
+                  --name "{{ github_runner_name }}" \
+                  --work "{{ github_runner_work_dir }}" \
+                  --labels "{{ item.labels | default('ubuntu,docker') }}" \
+                  --replace
+              environment:
+                RUNNER_ALLOW_RUNASROOT: "true"
+              loop: "{{ repo_registrations | default([]) }}"
+              loop_control:
+                label: "{{ item.value }}"
+              no_log: true
+          when: repo_tokens_result.results | length > 0
+
+        # Register with organizations (with error tolerance for permission issues)
+        - name: Register runner with organizations
+          block:
+            - name: Parse org token results (filter out null tokens)
+              set_fact:
+                org_registrations: "{{ org_registrations | default([]) + [item.0 | combine({'token': item.1.stdout})] }}"
+              loop: "{{ (github_runner_registrations | selectattr('type', 'equalto', 'org') | list) | zip(org_tokens_result.results) | list }}"
+              when: item.1.stdout != 'null'
+
+            - name: Warn about null org tokens
+              debug:
+                msg:
+                  - "⚠️  WARNING: Organization registration token is null for: {{ item.0.value }}"
+                  - "This likely means your PAT doesn't have admin:org_hook scope for this org"
+                  - "Or you might not be an org admin/owner"
+                  - "The runner is still available for personal repos"
+                  - ""
+                  - "To fix: Make sure your PAT has these scopes:"
+                  - "  - admin:org_hook"
+                  - "  - admin:repo_hook"
+                  - "  - repo"
+                  - "  - workflow"
+              loop: "{{ (github_runner_registrations | selectattr('type', 'equalto', 'org') | list) | zip(org_tokens_result.results) | list }}"
+              when: item.1.stdout == 'null'
+
+            - name: Register with each organization
+              shell: |
+                cd {{ runner_install_dir }}
+                sudo -u {{ runner_user }} ./config.sh \
+                  --unattended \
+                  --url "https://github.com/{{ item.value }}" \
+                  --token "{{ item.token }}" \
+                  --name "{{ github_runner_name }}" \
+                  --work "{{ github_runner_work_dir }}" \
+                  --labels "{{ item.labels | default('ubuntu,docker') }}" \
+                  --replace
+              environment:
+                RUNNER_ALLOW_RUNASROOT: "true"
+              loop: "{{ org_registrations | default([]) }}"
+              loop_control:
+                label: "{{ item.value }}"
+              no_log: true
+              ignore_errors: true
+          when: org_tokens_result.results | length > 0
+
+      when:
+        - not runner_config_exists.stat.exists or not github_runner_check_registration
+        - github_runner_registrations | length > 0
+        - github_pat is defined
+
+    # Start service
+    - name: Start and enable runner service
+      block:
+        - name: Enable github-runner service
+          systemd:
+            name: "{{ runner_service_name }}"
+            enabled: yes
+            daemon_reload: yes
+
+        - name: Start github-runner service
+          systemd:
+            name: "{{ runner_service_name }}"
+            state: started
+
+        - name: Wait for service to start
+          pause:
+            seconds: 3
+
+        - name: Get service status
+          systemd:
+            name: "{{ runner_service_name }}"
+          register: service_status
+
+        - name: Display deployment success
+          debug:
+            msg:
+              - "✓ GitHub Actions Runner deployed successfully!"
+              - "  Host: {{ inventory_hostname }}"
+              - "  Service: {{ service_status.status.ActiveState }}"
+              - "  Registered repos: {{ (github_runner_registrations | selectattr('type', 'equalto', 'repo') | map(attribute='value') | list) }}"
+              - "  Registered orgs: {{ (github_runner_registrations | selectattr('type', 'equalto', 'org') | map(attribute='value') | list) }}"
+              - ""
+              - "Logs: journalctl -u {{ runner_service_name }} -f"
+              - "Check GitHub Settings > Actions > Runners for available runner"
+
+      when: github_runner_autostart | default(true) and github_runner_registrations | length > 0
+
+    - name: Manual registration instructions
+      debug:
+        msg:
+          - "GitHub Actions Runner installed on {{ inventory_hostname }}"
+          - ""
+          - "Auto-registration disabled (github_runner_registrations is empty)"
+          - "To enable automated registration:"
+          - "  1. Create GitHub PAT: github.com/settings/tokens"
+          - "  2. Edit secrets.yml: github_pat: 'ghp_xxxx'"
+          - "  3. Edit group_vars/github_runners.yml:"
+          - "       github_runner_registrations:"
+          - "         - type: 'repo'"
+          - "           value: 'owner/repo'"
+          - "           labels: 'ubuntu,docker'"
+          - "  4. Run playbook again"
+      when: github_runner_registrations | length == 0
+
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes

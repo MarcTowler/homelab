@@ -1,0 +1,114 @@
+#!/bin/bash
+# GitHub Actions Runner Configuration Script
+# Usage: ./runner-config.sh --token YOUR_GITHUB_TOKEN [options]
+
+set -e
+
+RUNNER_DIR="{{ runner_install_dir }}"
+RUNNER_HOME="{{ runner_home }}"
+RUNNER_USER="{{ runner_user }}"
+
+# Default values
+RUNNER_NAME="$(hostname)"
+RUNNER_TOKEN=""
+RUNNER_URL=""
+RUNNER_LABELS=""
+UNREGISTER=false
+
+# Parse command-line arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --token)
+      RUNNER_TOKEN="$2"
+      shift 2
+      ;;
+    --url)
+      RUNNER_URL="$2"
+      shift 2
+      ;;
+    --name)
+      RUNNER_NAME="$2"
+      shift 2
+      ;;
+    --labels)
+      RUNNER_LABELS="$2"
+      shift 2
+      ;;
+    --unregister)
+      UNREGISTER=true
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Usage: $0 --token TOKEN [--url URL] [--name NAME] [--labels LABELS] [--unregister]"
+      exit 1
+      ;;
+  esac
+done
+
+if [ -z "$RUNNER_TOKEN" ]; then
+  echo "Error: --token is required"
+  echo "Usage: $0 --token TOKEN [--url URL] [--name NAME] [--labels LABELS]"
+  exit 1
+fi
+
+# Determine GitHub URL based on token type
+if [ -z "$RUNNER_URL" ]; then
+  # If it's an org token (starts with 'ghu_'), use org URL
+  # If it's a repo token, ask for URL
+  if [[ "$RUNNER_TOKEN" =~ ^ghu_ ]]; then
+    echo "Organization token detected"
+    echo "Please provide the organization URL using --url"
+    echo "Example: https://github.com/your-org"
+    exit 1
+  else
+    echo "Repository token detected"
+    echo "Please provide the repository URL using --url"
+    echo "Example: https://github.com/your-username/your-repo"
+    exit 1
+  fi
+fi
+
+# Unregister if requested
+if [ "$UNREGISTER" = true ]; then
+  echo "Unregistering runner from GitHub..."
+  cd "$RUNNER_DIR"
+  sudo -u "$RUNNER_USER" ./config.sh remove --token "$RUNNER_TOKEN" --url "$RUNNER_URL"
+  exit 0
+fi
+
+# Register runner
+echo "Configuring GitHub Actions Runner"
+echo "  Name: $RUNNER_NAME"
+echo "  URL: $RUNNER_URL"
+echo "  Labels: ${RUNNER_LABELS:-default}"
+
+cd "$RUNNER_DIR"
+
+# Run configuration script
+if [ -z "$RUNNER_LABELS" ]; then
+  sudo -u "$RUNNER_USER" ./config.sh \
+    --unattended \
+    --url "$RUNNER_URL" \
+    --token "$RUNNER_TOKEN" \
+    --name "$RUNNER_NAME" \
+    --work "$RUNNER_HOME/work" \
+    --replace
+else
+  sudo -u "$RUNNER_USER" ./config.sh \
+    --unattended \
+    --url "$RUNNER_URL" \
+    --token "$RUNNER_TOKEN" \
+    --name "$RUNNER_NAME" \
+    --work "$RUNNER_HOME/work" \
+    --labels "$RUNNER_LABELS" \
+    --replace
+fi
+
+echo "Runner configured successfully!"
+echo ""
+echo "Next steps:"
+echo "1. Start the runner service: sudo systemctl start github-runner"
+echo "2. Enable auto-start: sudo systemctl enable github-runner"
+echo "3. Check status: sudo systemctl status github-runner"
+echo "4. View logs: journalctl -u github-runner -f"

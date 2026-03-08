@@ -23,6 +23,18 @@
     "name": "gapi"
     "node": "arcanine"
     "vmid": 1002
+  "github-runner":
+    "icon": "mdi-container"
+    "ip": "10.0.1.182"
+    "name": "github-runner"
+    "node": "growlithe"
+    "vmid": 1010
+  "github-runner-personal":
+    "icon": "mdi-container"
+    "ip": "10.0.1.131"
+    "name": "github-runner-personal"
+    "node": "growlithe"
+    "vmid": 1011
   "homepage":
     "icon": "homepage.png"
     "ip": "10.0.1.178"

@@ -1,0 +1,26 @@
+[Unit]
+Description=GitHub Actions Runner Service
+After=network.target
+
+[Service]
+Type=simple
+User={{ runner_user }}
+Group={{ runner_group }}
+WorkingDirectory={{ runner_home }}
+ExecStart={{ runner_install_dir }}/run.sh
+ExecStop={{ runner_install_dir }}/run.sh remove
+Restart=always
+RestartSec=15
+RestartForceExitStatus=1
+
+# Service resource limits
+MemoryLimit=8G
+CPUQuota=400%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=github-runner
+
+[Install]
+WantedBy=multi-user.target

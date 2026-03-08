@@ -144,6 +144,48 @@ containers = {
     ]
     tags      = ["game-server", "ubuntu"]
     exporters = ["node"]
+  },
+  github-runner = {
+    lxc_id     = 1010
+    cores      = 4
+    memory     = 8192
+    node       = "growlithe"
+    ip_address = "dhcp"
+    image      = "ubuntu_2204"
+    features = {
+      nesting = true
+      keyctl  = true
+    }
+    mount_points = [
+      {
+        volume = "local-lvm"
+        size   = "50G"
+        path   = "/var/lib/github-runner"
+      }
+    ]
+    tags      = ["github-runner", "ci-cd", "ubuntu"]
+    exporters = ["node"]
+  },
+  github-runner-personal = {
+    lxc_id     = 1011
+    cores      = 4
+    memory     = 8192
+    node       = "growlithe"
+    ip_address = "dhcp"
+    image      = "ubuntu_2204"
+    features = {
+      nesting = true
+      keyctl  = true
+    }
+    mount_points = [
+      {
+        volume = "local-lvm"
+        size   = "50G"
+        path   = "/var/lib/github-runner"
+      }
+    ]
+    tags      = ["github-runner", "ci-cd", "ubuntu"]
+    exporters = ["node"]
   }
 }
 
