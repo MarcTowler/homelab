@@ -123,30 +123,6 @@ resource "null_resource" "ansible_provisioner" {
     interpreter = ["bash", "-c"]
   }
 
-  # Wait for SSH to be available
-  provisioner "local-exec" {
-    command = "timeout 180 bash -c \"until nc -z ${proxmox_virtual_environment_container.this[each.key].ipv4.veth0} 22; do echo 'waiting for SSH...'; sleep 3; done\""
-  }
-
-  # Install Python on the container (required for Ansible)
-  provisioner "remote-exec" {
-    count = fileexists(pathexpand("~/.ssh/id_ed25519")) ? 1 : 0
-
-    inline = [
-      "apt-get update",
-      "apt-get install -y python3 python3-pip",
-      "python3 -m pip install --upgrade pip"
-    ]
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = proxmox_virtual_environment_container.this[each.key].ipv4.veth0
-      private_key = file(pathexpand("~/.ssh/id_ed25519"))
-      timeout     = "5m"
-    }
-  }
-
   depends_on = [
     proxmox_virtual_environment_container.this,
     local_file.ansible_inventory
