@@ -46,6 +46,10 @@ jobs:
           terraform_password = "${{ secrets.TERRAFORM_PASSWORD }}"
           proxmox_tls_insecure = "${{ secrets.PROXMOX_TLS_INSECURE }}"
           cloudflare_dns_token = "${{ secrets.CLOUDFLARE_DNS_TOKEN }}"
+          domain_name = "itslit.me.uk"
+          node = "arcanine"
+          acme_email = "marc@marctowler.co.uk"
+          vm_id = 9000
           TFVARS
           terraform fmt terraform.tfvars
 
