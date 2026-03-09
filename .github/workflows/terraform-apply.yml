@@ -1,0 +1,87 @@
+name: Terraform Apply
+
+# This workflow automatically applies Terraform changes when code is merged to main
+# ONLY runs on successful push to main branch after terraform checks pass
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.tf'
+  workflow_dispatch:
+
+jobs:
+  apply:
+    runs-on: [self-hosted, linux]
+    env:
+      TF_VERSION: 1.14.4
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Download latest state artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-state
+          path: ./
+        continue-on-error: true
+
+      - name: Configure Terraform variables
+        run: |
+          cat > terraform.tfvars <<EOF
+          proxmox_api_url = "${{ secrets.PROXMOX_API_URL }}"
+          proxmox_user = "${{ secrets.PROXMOX_USER }}"
+          proxmox_password = "${{ secrets.PROXMOX_PASSWORD }}"
+          proxmox_api_token = "${{ secrets.PROXMOX_API_TOKEN }}"
+          terraform_user = "${{ secrets.TERRAFORM_USER }}"
+          terraform_password = "${{ secrets.TERRAFORM_PASSWORD }}"
+          proxmox_tls_insecure = "${{ secrets.PROXMOX_TLS_INSECURE }}"
+          cloudflare_dns_token = "${{ secrets.CLOUDFLARE_DNS_TOKEN }}"
+          EOF
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan
+
+      - name: Terraform Apply
+        if: steps.plan.outcome == 'success'
+        run: |
+          terraform apply -no-color tfplan
+          echo "APPLY_SUCCESS=true" >> $GITHUB_ENV
+
+      - name: Upload updated state
+        if: env.APPLY_SUCCESS == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-state
+          path: terraform.tfstate
+          retention-days: 30
+
+      - name: Create deployment summary
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const status = '${{ job.status }}' === 'success' ? '✅' : '❌';
+            
+            core.summary
+              .addHeading('Terraform Apply Result')
+              .addRaw(`${status} Status: ${{ job.status }}`)
+              .write();
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Terraform apply failed!"
+          echo "Please review logs and manual action may be needed"
+          exit 1

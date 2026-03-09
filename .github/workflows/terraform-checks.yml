@@ -1,0 +1,117 @@
+name: Terraform Validation & Drift Detection
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - '**.tf'
+      - '.github/workflows/terraform-checks.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - '**.tf'
+  schedule:
+    # Run daily drift detection at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: [self-hosted, linux]
+    env:
+      TF_VERSION: 1.14.4
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Download state artifact
+        id: download-state
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-state
+          path: ./
+        continue-on-error: true
+
+      - name: Check state file
+        run: |
+          if [ -f terraform.tfstate ]; then
+            echo "Using downloaded state file"
+            ls -lah terraform.tfstate
+          else
+            echo "No previous state found - this is the first run"
+          fi
+
+      - name: Configure Terraform variables
+        run: |
+          cat > terraform.tfvars <<EOF
+          proxmox_api_url = "${{ secrets.PROXMOX_API_URL }}"
+          proxmox_user = "${{ secrets.PROXMOX_USER }}"
+          proxmox_password = "${{ secrets.PROXMOX_PASSWORD }}"
+          proxmox_api_token = "${{ secrets.PROXMOX_API_TOKEN }}"
+          terraform_user = "${{ secrets.TERRAFORM_USER }}"
+          terraform_password = "${{ secrets.TERRAFORM_PASSWORD }}"
+          proxmox_tls_insecure = "${{ secrets.PROXMOX_TLS_INSECURE }}"
+          cloudflare_dns_token = "${{ secrets.CLOUDFLARE_DNS_TOKEN }}"
+          # Add other required variables from your terraform.tfvars
+          EOF
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan (Drift Detection)
+        id: plan
+        run: |
+          terraform plan -no-color -out=tfplan 2>&1 | tee plan-output.txt
+          exit ${PIPESTATUS[0]}
+        continue-on-error: true
+
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request' && steps.plan.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('plan-output.txt', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Terraform Plan Output\n\`\`\`\n${planOutput}\n\`\`\``
+            });
+
+      - name: Upload state artifact
+        if: always() && steps.plan.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-state
+          path: terraform.tfstate
+          retention-days: 30
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+      - name: Format Check Failed
+        run: |
+          echo "Running terraform fmt to show required changes..."
+          terraform fmt -recursive
+        if: failure()
