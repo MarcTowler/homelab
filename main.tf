@@ -12,7 +12,7 @@ resource "proxmox_virtual_environment_hosts" "nodes" {
       "localhost.localdomain"
     ]
   }
-  
+
   dynamic "entry" {
     for_each = var.nodes
     content {

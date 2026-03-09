@@ -31,10 +31,10 @@ resource "proxmox_virtual_environment_container" "this" {
     }
 
     user_account {
-      keys = [
-        trimspace(tls_private_key.ubuntu_container_key.public_key_openssh),
-        file(pathexpand("~/.ssh/id_ed25519.pub"))
-      ]
+      keys = concat(
+        [trimspace(tls_private_key.ubuntu_container_key.public_key_openssh)],
+        fileexists(pathexpand("~/.ssh/id_ed25519.pub")) ? [file(pathexpand("~/.ssh/id_ed25519.pub"))] : []
+      )
       password = random_password.ubuntu_container_password.result
     }
 

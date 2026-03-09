@@ -44,7 +44,7 @@ resource "local_file" "ansible_inventory" {
             }
           }
         }
-        
+
         # Exporter-based groups (NEW)
         node_exporters = {
           hosts = {
@@ -64,7 +64,7 @@ resource "local_file" "ansible_inventory" {
             } if contains(cfg.exporters, "mysql")
           }
         }
-        
+
         # Proxmox node exporters
         proxmox_node_exporters = {
           hosts = {
@@ -75,7 +75,7 @@ resource "local_file" "ansible_inventory" {
             }
           }
         }
-        
+
         ungrouped = {
           vars = {
             ansible_port               = 22
@@ -213,16 +213,16 @@ resource "local_file" "exporters_mapping" {
     monitored_hosts = {
       for name, cfg in var.containers :
       name => {
-        hostname = name
-        ip       = proxmox_virtual_environment_container.this[name].ipv4.veth0
+        hostname  = name
+        ip        = proxmox_virtual_environment_container.this[name].ipv4.veth0
         exporters = cfg.exporters
       }
     }
     proxmox_nodes_list = [
       for name, cfg in var.nodes :
       {
-        hostname = cfg.node_name
-        ip       = cfg.ip_address
+        hostname  = cfg.node_name
+        ip        = cfg.ip_address
         exporters = ["node"]
       }
     ]
