@@ -42,6 +42,7 @@
           - wget
           - git
           - jq
+          - unzip
           - build-essential
           - libssl-dev
           - libffi-dev
