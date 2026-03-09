@@ -79,6 +79,13 @@
         mode: '0755'
         owner: root
         group: root
+
+    - name: Create tf symlink (to avoid GitHub Actions secret masking)
+      file:
+        src: /usr/local/bin/terraform
+        dest: /usr/local/bin/tf
+        state: link
+        force: yes
     - name: Create github runner user
       user:
         name: "{{ runner_user }}"

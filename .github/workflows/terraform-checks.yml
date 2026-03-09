@@ -46,19 +46,19 @@ jobs:
         continue-on-error: true
 
       - name: Terraform Format
-        run: /usr/local/bin/terraform fmt -check -recursive
+        run: /usr/local/bin/tf fmt -check -recursive
         continue-on-error: true
 
       - name: Terraform Init
-        run: /usr/local/bin/terraform init
+        run: /usr/local/bin/tf init
 
       - name: Terraform Validate
-        run: /usr/local/bin/terraform validate
+        run: /usr/local/bin/tf validate
 
       - name: Terraform Plan
         id: plan
         run: |
-          /usr/local/bin/terraform plan -out=tfplan > plan.txt 2>&1
+          /usr/local/bin/tf plan -out=tfplan > plan.txt 2>&1
           cat plan.txt
 
       - name: Upload plan output

@@ -80,6 +80,13 @@
         owner: root
         group: root
 
+    - name: Create tf symlink (to avoid GitHub Actions secret masking)
+      file:
+        src: /usr/local/bin/terraform
+        dest: /usr/local/bin/tf
+        state: link
+        force: yes
+
     # Create runner user
     - name: Create github runner user
       user:

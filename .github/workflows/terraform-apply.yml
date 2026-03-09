@@ -11,28 +11,13 @@ on:
 jobs:
   apply:
     runs-on: [self-hosted, linux]
-    env:
-      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     
     steps:
       - uses: actions/checkout@v4
 
-      - name: Debug PATH
+      - name: Configure Terraform variables
         run: |
-          echo "PATH=$PATH"
-          echo "which terraform: $(which terraform 2>&1 || echo 'NOT FOUND')"
-          ls -la /usr/local/bin/terraform
-
-      - name: Download state artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-state
-          path: ./
-        continue-on-error: true
-
-      - name: Create terraform.tfvars
-        run: |
-          cat > terraform.tfvars <<'TFVARS'
+          cat > terraform.tfvars << 'TFVARS'
           proxmox_api_url = "${{ secrets.PROXMOX_API_URL }}"
           proxmox_user = "${{ secrets.PROXMOX_USER }}"
           proxmox_password = "${{ secrets.PROXMOX_PASSWORD }}"
@@ -43,14 +28,21 @@ jobs:
           cloudflare_dns_token = "${{ secrets.CLOUDFLARE_DNS_TOKEN }}"
           TFVARS
 
+      - name: Download state artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-state
+          path: ./
+        continue-on-error: true
+
       - name: Terraform Init
-        run: terraform init
+        run: /usr/local/bin/tf init
 
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
+        run: /usr/local/bin/tf plan -out=tfplan
 
       - name: Terraform Apply
-        run: terraform apply tfplan
+        run: /usr/local/bin/tf apply tfplan
 
       - name: Upload state artifact
         if: success()
