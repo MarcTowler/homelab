@@ -20,7 +20,7 @@ jobs:
           mkdir -p /tmp/tf-bin
           cd /tmp/tf-bin
           wget -q https://releases.hashicorp.com/terraform/1.14.4/terraform_1.14.4_linux_amd64.zip
-          unzip -q terraform_1.14.4_linux_amd64.zip
+          python3 -m zipfile -e terraform_1.14.4_linux_amd64.zip .
           chmod +x terraform
           /tmp/tf-bin/terraform version
           echo "/tmp/tf-bin" >> $GITHUB_PATH
