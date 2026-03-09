@@ -38,12 +38,34 @@ jobs:
           cloudflare_dns_token = "${{ secrets.CLOUDFLARE_DNS_TOKEN }}"
           TFVARS
 
+      - name: Debug - Before terraform init
+        run: |
+          echo "=== Pre-init check ==="
+          test -f /usr/local/bin/tf && echo "tf exists" || echo "tf NOT FOUND"
+          test -f /usr/local/bin/terraform && echo "terraform exists" || echo "terraform NOT FOUND"
+          /bin/bash -c "test -f /usr/local/bin/tf && echo tf ok || echo tf notok"
+
       - name: Download state artifact
         uses: actions/download-artifact@v4
         with:
           name: terraform-state
           path: ./
         continue-on-error: true
+
+      - name: Debug - Check Terraform availability
+        run: |
+          echo "=== Checking /usr/local/bin ==="
+          ls -la /usr/local/bin/ | grep -E '(tf|terraform)'
+          echo "=== Testing direct path ==="
+          file /usr/local/bin/tf
+          echo "=== Testing execution ==="
+          /usr/local/bin/tf version || echo "FAILED"
+          echo "=== System info ===" 
+          echo "Shell: $SHELL"
+          echo "PATH: $PATH"
+          echo "PWD: $PWD"
+          which tf 2>/dev/null || echo "tf not in PATH"
+          which terraform 2>/dev/null || echo "terraform not in PATH"
 
       - name: Terraform Format
         run: /usr/local/bin/tf fmt -check -recursive
