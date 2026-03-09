@@ -13,15 +13,13 @@ on:
 jobs:
   apply:
     runs-on: [self-hosted, linux]
-    env:
-      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Verify Terraform installation
-        run: terraform version
+        run: /usr/local/bin/terraform version
 
       - name: Download latest state artifact
         uses: actions/download-artifact@v4
@@ -44,16 +42,16 @@ jobs:
           EOF
 
       - name: Terraform Init
-        run: terraform init
+        run: /usr/local/bin/terraform init
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color -out=tfplan
+        run: /usr/local/bin/terraform plan -no-color -out=tfplan
 
       - name: Terraform Apply
         if: steps.plan.outcome == 'success'
         run: |
-          terraform apply -no-color tfplan
+          /usr/local/bin/terraform apply -no-color tfplan
           echo "APPLY_SUCCESS=true" >> $GITHUB_ENV
 
       - name: Upload updated state

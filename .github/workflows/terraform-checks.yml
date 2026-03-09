@@ -22,15 +22,13 @@ on:
 jobs:
   terraform:
     runs-on: [self-hosted, linux]
-    env:
-      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Verify Terraform installation
-        run: terraform version
+        run: /usr/local/bin/terraform version
 
       - name: Download state artifact
         id: download-state
@@ -64,19 +62,19 @@ jobs:
           EOF
 
       - name: Terraform Format Check
-        run: terraform fmt -check -recursive
+        run: /usr/local/bin/terraform fmt -check -recursive
         continue-on-error: true
 
       - name: Terraform Init
-        run: terraform init
+        run: /usr/local/bin/terraform init
 
       - name: Terraform Validate
-        run: terraform validate
+        run: /usr/local/bin/terraform validate
 
       - name: Terraform Plan (Drift Detection)
         id: plan
         run: |
-          terraform plan -no-color -out=tfplan 2>&1 | tee plan-output.txt
+          /usr/local/bin/terraform plan -no-color -out=tfplan 2>&1 | tee plan-output.txt
           exit ${PIPESTATUS[0]}
         continue-on-error: true
 
@@ -109,5 +107,5 @@ jobs:
         run: exit 1
 
       - name: Show formatting changes
-        run: terraform fmt -recursive
+        run: /usr/local/bin/terraform fmt -recursive
         if: failure()
