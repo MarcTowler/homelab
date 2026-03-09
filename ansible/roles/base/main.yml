@@ -67,6 +67,7 @@
         regexp: "^#?DNS="
         line: "DNS=1.1.1.1 8.8.8.8"
       notify: restart systemd-resolved
+      when: inventory_hostname not in groups['proxmox_nodes']
 
     - name: Ensure /etc/hostname has correct entry
       lineinfile:

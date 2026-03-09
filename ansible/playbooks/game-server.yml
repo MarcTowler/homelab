@@ -47,27 +47,43 @@
         port: 8080
         delay: 5
 
+    - name: Check if rclone is installed
+      command: which rclone
+      register: rclone_installed
+      ignore_errors: true
+      changed_when: false
+
     - name: Get rclone
       shell: "curl https://rclone.org/install.sh | bash"
-      register: rclone_install
-      changed_when: "'rclone' not in rclone_install.stdout"
+      when: rclone_installed.rc != 0
 
     - name: Create rclone config directory
       file:
         path: ~/.config/rclone
         state: directory
         mode: '0700'
+
+    - name: Check if rclone config exists
+      stat:
+        path: ~/.config/rclone/rclone.conf
+      register: rclone_conf_stat
     
     - name: Create rclone config file
       copy:
         dest: ~/.config/rclone/rclone.conf
         content: |
-          [remote]
+          [gdrive]
           type = drive
           scope = drive
           token = {"access_token": "{{ rclone_token }}", "token_type":"Bearer","refresh_token": "{{ rclone_refresh_token }}","expiry":"{{ rclone_token_expiry }}","expires_in":3599}
           team_drive = 
+      when: not rclone_conf_stat.stat.exists
     
+    - name: Check if AMP backup script exists
+      stat:
+        path: /usr/local/bin/amp_backup.sh
+      register: amp_backup_stat
+
     - name: Create AMP backup script
       copy:
         dest: /usr/local/bin/amp_backup.sh
@@ -93,6 +109,7 @@
           rclone delete --min-age 30d "$GDRIVE_REMOTE" >> $LOG_FILE 2>&1
 
           echo "--- Backup finished at $(date) ---" >> $LOG_FILE
+      when: not amp_backup_stat.stat.exists
     
     - name: Create cron job for AMP backup
       cron:
