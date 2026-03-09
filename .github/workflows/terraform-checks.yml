@@ -21,9 +21,17 @@ on:
 jobs:
   terraform:
     runs-on: [self-hosted, linux]
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     
     steps:
       - uses: actions/checkout@v4
+
+      - name: Debug PATH
+        run: |
+          echo "PATH=$PATH"
+          echo "which terraform: $(which terraform 2>&1 || echo 'NOT FOUND')"
+          ls -la /usr/local/bin/terraform
 
       - name: Download state artifact
         uses: actions/download-artifact@v4
