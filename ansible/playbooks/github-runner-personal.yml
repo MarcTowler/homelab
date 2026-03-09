@@ -53,6 +53,19 @@
           - docker-compose
         state: present
 
+    - name: Install Terraform
+      shell: |
+        TERRAFORM_VERSION="1.14.4"
+        TERRAFORM_URL="https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+        
+        cd /tmp
+        wget -q "$TERRAFORM_URL" -O terraform.zip
+        unzip -o terraform.zip
+        mv terraform /usr/local/bin/
+        rm terraform.zip
+        terraform version
+      changed_when: false
+
     # Create runner user
     - name: Create github runner user
       user:
