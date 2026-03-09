@@ -128,7 +128,6 @@ containers = {
     lxc_id     = 1007
     cores      = 8
     memory     = 24576
-    disk_size  = 100
     node       = "pawmot"
     ip_address = "dhcp"
     image      = "ubuntu_2204"
@@ -136,6 +135,13 @@ containers = {
       nesting = true
       keyctl  = true
     }
+    mount_points = [
+      {
+        volume = "local-lvm"
+        size   = "100G"
+        path   = "/mnt/game-data"
+      }
+    ]
     tags      = ["game-server", "ubuntu"]
     exporters = ["node"]
   },

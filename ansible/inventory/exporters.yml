@@ -14,7 +14,7 @@
     "exporters":
     - "node"
     "hostname": "game-server"
-    "ip": "10.0.1.48"
+    "ip": "10.0.1.41"
   "gapi":
     "exporters":
     - "node"
