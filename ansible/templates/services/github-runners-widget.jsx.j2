@@ -1,0 +1,116 @@
+/**
+ * GitHub Runners Widget Component
+ * Place in: /var/www/homepage/public/app/components/services/widgets/github-runners.jsx
+ */
+
+import { useEffect, useState } from 'react';
+
+export default function GitHubRunnersWidget({ options }) {
+  const [runners, setRunners] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const apiUrl = options?.api_url || 'http://localhost:3001/api/runners';
+  const refreshInterval = options?.refresh_interval || 30000; // 30 seconds
+
+  useEffect(() => {
+    const fetchRunners = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        setRunners(data);
+        setError(null);
+      } catch (err) {
+        setError(err.message);
+        console.error('Error fetching runners:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRunners();
+    const interval = setInterval(fetchRunners, refreshInterval);
+    return () => clearInterval(interval);
+  }, [apiUrl, refreshInterval]);
+
+  if (error) {
+    return (
+      <div className="bg-red-500 text-white p-4 rounded">
+        Error: {error}
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-gray-700 text-white p-4 rounded animate-pulse">
+        Loading runners...
+      </div>
+    );
+  }
+
+  if (!runners?.runners?.length) {
+    return (
+      <div className="bg-gray-700 text-white p-4 rounded">
+        No runners found
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gray-800 text-white p-4 rounded">
+      <div className="flex justify-between mb-4">
+        <h3 className="text-lg font-bold">GitHub Runners</h3>
+        <div className="text-sm">
+          <span className={runners.summary.active > 0 ? 'text-green-400' : 'text-gray-400'}>
+            {runners.summary.active} Active
+          </span>
+          <span className="text-gray-500 mx-2">•</span>
+          <span className="text-gray-400">{runners.summary.idle} Idle</span>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {runners.runners.map((runner) => (
+          <div key={runner.id} className="bg-gray-700 p-3 rounded">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="font-semibold">{runner.name}</div>
+                <div className="text-xs text-gray-400">
+                  {runner.scope} • {runner.scoped_to}
+                </div>
+                {runner.current_job && (
+                  <div className="text-xs mt-1 text-blue-300">
+                    Running: {runner.current_job.name}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-1 rounded text-xs font-bold ${
+                  runner.busy
+                    ? 'bg-green-600 text-white'
+                    : runner.status === 'offline'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-gray-600 text-white'
+                }`}>
+                  {runner.busy ? 'RUNNING' : runner.status === 'offline' ? 'OFFLINE' : 'IDLE'}
+                </span>
+              </div>
+            </div>
+            <div className="text-xs text-gray-500 mt-2">
+              {runner.labels?.join(', ')}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="text-xs text-gray-500 mt-3">
+        Updated: {new Date(runners.timestamp).toLocaleTimeString()}
+      </div>
+    </div>
+  );
+}

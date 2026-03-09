@@ -195,6 +195,9 @@ resource "local_file" "homepage_vars" {
           can(regex("traefik", name)) ? "traefik.png" :
           can(regex("homepage", name)) ? "homepage.png" :
           can(regex("monitoring", name)) ? "grafana.png" :
+          can(regex("github", name)) ? "github.png" :
+          can(regex("game-server", name)) ? "amp.png" :
+          can(regex("minecraft", name)) ? "minecraft.png" :
           "mdi-container" # Default icon
         )
       }

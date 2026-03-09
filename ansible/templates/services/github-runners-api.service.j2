@@ -1,0 +1,32 @@
+[Unit]
+Description=GitHub Runners API Service
+Documentation=file:///home/marctowler/homelab/GITHUB_RUNNERS_WIDGET_README.md
+After=network.target homepage.service
+Wants=homepage.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/var/www/homepage/scripts
+
+Environment="GITHUB_PAT={{ github_pat | default('') }}"
+Environment="GITHUB_PAT_PERSONAL={{ github_pat_personal | default('') }}"
+Environment="ORG_NAME=ItsLit-Media-and-Development"
+Environment="PERSONAL_REPOS=marctowler/homelab,marctowler/LitBot,marctowler/Elrakis.NET"
+Environment="PORT=3001"
+Environment="NODE_ENV=production"
+
+ExecStart=/usr/bin/node /var/www/homepage/scripts/github-runners-api.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=github-runners-api
+
+# Resource limits
+MemoryLimit=512M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target
