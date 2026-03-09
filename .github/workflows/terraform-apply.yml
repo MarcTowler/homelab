@@ -15,6 +15,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Terraform
+        run: |
+          mkdir -p /tmp/tf-bin
+          cd /tmp/tf-bin
+          wget -q https://releases.hashicorp.com/terraform/1.14.4/terraform_1.14.4_linux_amd64.zip
+          unzip -q terraform_1.14.4_linux_amd64.zip
+          chmod +x terraform
+          /tmp/tf-bin/terraform version
+          echo "/tmp/tf-bin" >> $GITHUB_PATH
+
       - name: Configure Terraform variables
         run: |
           cat > terraform.tfvars << 'TFVARS'
@@ -36,13 +46,13 @@ jobs:
         continue-on-error: true
 
       - name: Terraform Init
-        run: /usr/local/bin/tf init
+        run: terraform init
 
       - name: Terraform Plan
-        run: /usr/local/bin/tf plan -out=tfplan
+        run: terraform plan -out=tfplan
 
       - name: Terraform Apply
-        run: /usr/local/bin/tf apply tfplan
+        run: terraform apply tfplan
 
       - name: Upload state artifact
         if: success()
