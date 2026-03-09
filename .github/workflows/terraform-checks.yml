@@ -31,8 +31,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          apt-get update
-          apt-get install -y unzip
+          if ! command -v unzip &> /dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y unzip
+          fi
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
