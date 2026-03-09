@@ -130,6 +130,8 @@ resource "null_resource" "ansible_provisioner" {
 
   # Install Python on the container (required for Ansible)
   provisioner "remote-exec" {
+    count = fileexists(pathexpand("~/.ssh/id_ed25519")) ? 1 : 0
+
     inline = [
       "apt-get update",
       "apt-get install -y python3 python3-pip",
