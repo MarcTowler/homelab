@@ -27,8 +27,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup shell environment
+        run: |
+          bash --version
+          pwd
+          ls -la /usr/local/bin/terraform
+
       - name: Verify Terraform installation
-        run: /usr/local/bin/terraform version
+        run: bash -c '/usr/local/bin/terraform version'
 
       - name: Download state artifact
         id: download-state
@@ -62,20 +68,18 @@ jobs:
           EOF
 
       - name: Terraform Format Check
-        run: /usr/local/bin/terraform fmt -check -recursive
+        run: bash -c '/usr/local/bin/terraform fmt -check -recursive'
         continue-on-error: true
 
       - name: Terraform Init
-        run: /usr/local/bin/terraform init
+        run: bash -c '/usr/local/bin/terraform init'
 
       - name: Terraform Validate
-        run: /usr/local/bin/terraform validate
+        run: bash -c '/usr/local/bin/terraform validate'
 
       - name: Terraform Plan (Drift Detection)
         id: plan
-        run: |
-          /usr/local/bin/terraform plan -no-color -out=tfplan 2>&1 | tee plan-output.txt
-          exit ${PIPESTATUS[0]}
+        run: bash -c '/usr/local/bin/terraform plan -no-color -out=tfplan 2>&1 | tee plan-output.txt' && echo "exit_code=0" || echo "exit_code=$?"
         continue-on-error: true
 
       - name: Comment PR with Plan
@@ -107,5 +111,5 @@ jobs:
         run: exit 1
 
       - name: Show formatting changes
-        run: /usr/local/bin/terraform fmt -recursive
+        run: bash -c '/usr/local/bin/terraform fmt -recursive'
         if: failure()

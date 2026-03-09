@@ -18,8 +18,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup shell environment
+        run: |
+          bash --version
+          pwd
+          ls -la /usr/local/bin/terraform
+
       - name: Verify Terraform installation
-        run: /usr/local/bin/terraform version
+        run: bash -c '/usr/local/bin/terraform version'
 
       - name: Download latest state artifact
         uses: actions/download-artifact@v4
@@ -42,17 +48,15 @@ jobs:
           EOF
 
       - name: Terraform Init
-        run: /usr/local/bin/terraform init
+        run: bash -c '/usr/local/bin/terraform init'
 
       - name: Terraform Plan
         id: plan
-        run: /usr/local/bin/terraform plan -no-color -out=tfplan
+        run: bash -c '/usr/local/bin/terraform plan -no-color -out=tfplan'
 
       - name: Terraform Apply
         if: steps.plan.outcome == 'success'
-        run: |
-          /usr/local/bin/terraform apply -no-color tfplan
-          echo "APPLY_SUCCESS=true" >> $GITHUB_ENV
+        run: bash -c '/usr/local/bin/terraform apply -no-color tfplan' && echo "APPLY_SUCCESS=true" >> $GITHUB_ENV
 
       - name: Upload updated state
         if: env.APPLY_SUCCESS == 'true'
