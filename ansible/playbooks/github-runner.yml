@@ -61,10 +61,24 @@
         cd /tmp
         wget -q "$TERRAFORM_URL" -O terraform.zip
         unzip -o terraform.zip
-        mv terraform /usr/local/bin/
+        chmod +x terraform
+        mv terraform /usr/local/bin/terraform
         rm terraform.zip
-        terraform version
       changed_when: false
+      register: terraform_install
+
+    - name: Verify Terraform installation
+      shell: /usr/local/bin/terraform version
+      changed_when: false
+      failed_when: terraform_version.rc != 0
+      register: terraform_version
+
+    - name: Ensure terraform is executable
+      file:
+        path: /usr/local/bin/terraform
+        mode: '0755'
+        owner: root
+        group: root
     - name: Create github runner user
       user:
         name: "{{ runner_user }}"

@@ -25,24 +25,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Terraform in PATH
-        run: |
-          echo "/usr/local/bin" >> "$GITHUB_PATH"
-          echo "/usr/bin" >> "$GITHUB_PATH"
-
-      - name: Test Terraform
-        shell: bash -l {0}
-        run: |
-          set -x
-          terraform version
-
-      - name: Download state artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-state
-          path: ./
-        continue-on-error: true
-
       - name: Configure Terraform variables
         run: |
           cat > terraform.tfvars << 'TFVARS'
@@ -56,31 +38,27 @@ jobs:
           cloudflare_dns_token = "${{ secrets.CLOUDFLARE_DNS_TOKEN }}"
           TFVARS
 
+      - name: Download state artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-state
+          path: ./
+        continue-on-error: true
+
       - name: Terraform Format
-        shell: bash -l {0}
-        run: |
-          set -x
-          terraform fmt -check -recursive
+        run: /usr/local/bin/terraform fmt -check -recursive
         continue-on-error: true
 
       - name: Terraform Init
-        shell: bash -l {0}
-        run: |
-          set -x
-          terraform init
+        run: /usr/local/bin/terraform init
 
       - name: Terraform Validate
-        shell: bash -l {0}
-        run: |
-          set -x
-          terraform validate
+        run: /usr/local/bin/terraform validate
 
       - name: Terraform Plan
         id: plan
-        shell: bash -l {0}
         run: |
-          set -x
-          terraform plan -out=tfplan > plan.txt 2>&1
+          /usr/local/bin/terraform plan -out=tfplan > plan.txt 2>&1
           cat plan.txt
 
       - name: Upload plan output
