@@ -12,7 +12,7 @@
     "node": "arcanine"
     "vmid": 1000
   "game-server":
-    "icon": "mdi-container"
+    "icon": "amp.png"
     "ip": "10.0.1.41"
     "name": "game-server"
     "node": "pawmot"
@@ -24,13 +24,13 @@
     "node": "arcanine"
     "vmid": 1002
   "github-runner":
-    "icon": "mdi-container"
+    "icon": "github.png"
     "ip": "10.0.1.182"
     "name": "github-runner"
     "node": "growlithe"
     "vmid": 1010
   "github-runner-personal":
-    "icon": "mdi-container"
+    "icon": "github.png"
     "ip": "10.0.1.131"
     "name": "github-runner-personal"
     "node": "growlithe"
