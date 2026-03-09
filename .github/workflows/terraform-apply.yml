@@ -13,6 +13,8 @@ on:
 jobs:
   apply:
     runs-on: [self-hosted, linux]
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     
     steps:
       - name: Checkout code
