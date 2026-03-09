@@ -37,7 +37,13 @@ jobs:
 
       - name: Configure Terraform variables
         run: |
-          cat > terraform.tfvars << 'TFVARS'
+          # Copy dev environment configuration
+          cp environment/dev.tfvars terraform.tfvars
+          
+          # Inject secrets into tfvars (these override dev.tfvars values)
+          cat >> terraform.tfvars << 'TFVARS'
+          
+          # Secrets from GitHub Actions (overrides defaults)
           proxmox_api_url = "${{ secrets.PROXMOX_API_URL }}"
           proxmox_user = "${{ secrets.PROXMOX_USER }}"
           proxmox_password = "${{ secrets.PROXMOX_PASSWORD }}"
@@ -46,10 +52,6 @@ jobs:
           terraform_password = "${{ secrets.TERRAFORM_PASSWORD }}"
           proxmox_tls_insecure = "${{ secrets.PROXMOX_TLS_INSECURE }}"
           cloudflare_dns_token = "${{ secrets.CLOUDFLARE_DNS_TOKEN }}"
-          domain_name = "itslit.me.uk"
-          node = "arcanine"
-          acme_email = "marc@marctowler.co.uk"
-          vm_id = 9000
           TFVARS
           terraform fmt terraform.tfvars
 
