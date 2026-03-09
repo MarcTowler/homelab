@@ -55,12 +55,32 @@ jobs:
           TFVARS
           terraform fmt terraform.tfvars
 
-      - name: Download state artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-state
-          path: ./
-        continue-on-error: true
+      - name: Prepare terraform state directory
+        run: |
+          mkdir -p /var/lib/github-runner
+          # Use local backend stored on runner persistent storage
+          echo "Terraform state will be stored at /var/lib/github-runner/terraform.tfstate"
+
+      - name: Sync state from physical machine
+        run: |
+          # Remote state location on physical machine
+          REMOTE_STATE="/home/marctowler/homelab/terraform.tfstate"
+          # Try to copy state from physical machine to runner
+          # This uses SSH key stored in RUNNER_SSH_KEY secret
+          if [[ -n "${{ secrets.RUNNER_SSH_KEY }}" ]]; then
+            mkdir -p ~/.ssh
+            echo "${{ secrets.RUNNER_SSH_KEY }}" > ~/.ssh/runner_key
+            chmod 600 ~/.ssh/runner_key
+            
+            # Attempt to copy state file from physical machine
+            # Adjust hostname if different from 'homelab'
+            scp -i ~/.ssh/runner_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+              marctowler@${{ secrets.PHYSICAL_MACHINE_HOST }}:${REMOTE_STATE} /var/lib/github-runner/terraform.tfstate 2>/dev/null || {
+              echo "Note: Could not sync state from physical machine (expected on first run if state doesn't exist)"
+            }
+          else
+            echo "Note: RUNNER_SSH_KEY secret not configured - skipping state sync from physical machine"
+          fi
 
       - name: Terraform Format
         run: terraform fmt -check -recursive
@@ -89,11 +109,3 @@ jobs:
           name: terraform-plan
           path: plan.txt
           retention-days: 7
-
-      - name: Upload state artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-state
-          path: terraform.tfstate
-          retention-days: 30

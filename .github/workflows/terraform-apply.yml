@@ -44,12 +44,31 @@ jobs:
           cloudflare_dns_token = "${{ secrets.CLOUDFLARE_DNS_TOKEN }}"
           TFVARS
 
-      - name: Download state artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-state
-          path: ./
-        continue-on-error: true
+      - name: Prepare terraform state directory
+        run: |
+          mkdir -p /var/lib/github-runner
+          echo "Terraform state will be stored at /var/lib/github-runner/terraform.tfstate"
+
+      - name: Sync state from physical machine
+        run: |
+          # Remote state location on physical machine
+          REMOTE_STATE="/home/marctowler/homelab/terraform.tfstate"
+          # Try to copy state from physical machine to runner
+          # This uses SSH key stored in RUNNER_SSH_KEY secret
+          if [[ -n "${{ secrets.RUNNER_SSH_KEY }}" ]]; then
+            mkdir -p ~/.ssh
+            echo "${{ secrets.RUNNER_SSH_KEY }}" > ~/.ssh/runner_key
+            chmod 600 ~/.ssh/runner_key
+            
+            # Attempt to copy state file from physical machine
+            # Adjust hostname if different from 'homelab'
+            scp -i ~/.ssh/runner_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+              marctowler@${{ secrets.PHYSICAL_MACHINE_HOST }}:${REMOTE_STATE} /var/lib/github-runner/terraform.tfstate 2>/dev/null || {
+              echo "Note: Could not sync state from physical machine (expected on first run if state doesn't exist)"
+            }
+          else
+            echo "Note: RUNNER_SSH_KEY secret not configured - skipping state sync from physical machine"
+          fi
 
       - name: Terraform Init
         run: terraform init
@@ -60,10 +79,27 @@ jobs:
       - name: Terraform Apply
         run: terraform apply tfplan
 
-      - name: Upload state artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-state
-          path: terraform.tfstate
-          retention-days: 30
+      - name: Sync state back to physical machine
+        if: always()
+        run: |
+          # After apply completes, sync the updated state back to physical machine
+          REMOTE_STATE="/home/marctowler/homelab/terraform.tfstate"
+          if [[ -n "${{ secrets.RUNNER_SSH_KEY }}" ]]; then
+            mkdir -p ~/.ssh
+            echo "${{ secrets.RUNNER_SSH_KEY }}" > ~/.ssh/runner_key
+            chmod 600 ~/.ssh/runner_key
+            
+            # Copy updated state file back to physical machine
+            if [[ -f /var/lib/github-runner/terraform.tfstate ]]; then
+              scp -i ~/.ssh/runner_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                /var/lib/github-runner/terraform.tfstate \
+                marctowler@${{ secrets.PHYSICAL_MACHINE_HOST }}:${REMOTE_STATE} 2>/dev/null || {
+                echo "Warning: Could not sync state back to physical machine"
+              }
+              echo "State synced back to physical machine"
+            fi
+          fi
+
+      - name: Post job cleanup
+        if: always()
+        run: echo "Terraform apply completed"
