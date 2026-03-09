@@ -63,7 +63,7 @@ jobs:
         continue-on-error: true
 
       - name: Terraform Format
-        run: terraform fmt -check -recursive --ignore-dir=.terraform
+        run: terraform fmt -check -recursive
         continue-on-error: true
 
       - name: Terraform Init
