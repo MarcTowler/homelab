@@ -1,7 +1,5 @@
 name: Terraform Apply
 
-# This workflow automatically applies Terraform changes when code is merged to main
-# ONLY runs on successful push to main branch after terraform checks pass
 on:
   push:
     branches:
@@ -15,28 +13,18 @@ jobs:
     runs-on: [self-hosted, linux]
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup shell environment
-        run: |
-          bash --version
-          pwd
-          ls -la /usr/local/bin/terraform
-
-      - name: Verify Terraform installation
-        run: bash -c '/usr/local/bin/terraform version'
-
-      - name: Download latest state artifact
+      - name: Download state artifact
         uses: actions/download-artifact@v4
         with:
           name: terraform-state
           path: ./
         continue-on-error: true
 
-      - name: Configure Terraform variables
+      - name: Create terraform.tfvars
         run: |
-          cat > terraform.tfvars <<EOF
+          cat > terraform.tfvars <<'TFVARS'
           proxmox_api_url = "${{ secrets.PROXMOX_API_URL }}"
           proxmox_user = "${{ secrets.PROXMOX_USER }}"
           proxmox_password = "${{ secrets.PROXMOX_PASSWORD }}"
@@ -45,43 +33,21 @@ jobs:
           terraform_password = "${{ secrets.TERRAFORM_PASSWORD }}"
           proxmox_tls_insecure = "${{ secrets.PROXMOX_TLS_INSECURE }}"
           cloudflare_dns_token = "${{ secrets.CLOUDFLARE_DNS_TOKEN }}"
-          EOF
+          TFVARS
 
       - name: Terraform Init
-        run: bash -c '/usr/local/bin/terraform init'
+        run: terraform init
 
       - name: Terraform Plan
-        id: plan
-        run: bash -c '/usr/local/bin/terraform plan -no-color -out=tfplan'
+        run: terraform plan -out=tfplan
 
       - name: Terraform Apply
-        if: steps.plan.outcome == 'success'
-        run: bash -c '/usr/local/bin/terraform apply -no-color tfplan' && echo "APPLY_SUCCESS=true" >> $GITHUB_ENV
+        run: terraform apply tfplan
 
-      - name: Upload updated state
-        if: env.APPLY_SUCCESS == 'true'
+      - name: Upload state artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: terraform-state
           path: terraform.tfstate
           retention-days: 30
-
-      - name: Create deployment summary
-        if: always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const status = '${{ job.status }}' === 'success' ? '✅' : '❌';
-            
-            core.summary
-              .addHeading('Terraform Apply Result')
-              .addRaw(`${status} Status: ${{ job.status }}`)
-              .write();
-
-      - name: Notify on failure
-        if: failure()
-        run: |
-          echo "❌ Terraform apply failed!"
-          echo "Please review logs and manual action may be needed"
-          exit 1

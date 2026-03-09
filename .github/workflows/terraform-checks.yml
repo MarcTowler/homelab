@@ -15,7 +15,6 @@ on:
     paths:
       - '**.tf'
   schedule:
-    # Run daily drift detection at 2 AM UTC
     - cron: '0 2 * * *'
   workflow_dispatch:
 
@@ -24,38 +23,18 @@ jobs:
     runs-on: [self-hosted, linux]
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup shell environment
-        run: |
-          bash --version
-          pwd
-          ls -la /usr/local/bin/terraform
-
-      - name: Verify Terraform installation
-        run: bash -c '/usr/local/bin/terraform version'
+      - uses: actions/checkout@v4
 
       - name: Download state artifact
-        id: download-state
         uses: actions/download-artifact@v4
         with:
           name: terraform-state
           path: ./
         continue-on-error: true
 
-      - name: Check state file
+      - name: Create terraform.tfvars
         run: |
-          if [ -f terraform.tfstate ]; then
-            echo "Using downloaded state file"
-            ls -lah terraform.tfstate
-          else
-            echo "No previous state found - this is the first run"
-          fi
-
-      - name: Configure Terraform variables
-        run: |
-          cat > terraform.tfvars <<EOF
+          cat > terraform.tfvars <<'TFVARS'
           proxmox_api_url = "${{ secrets.PROXMOX_API_URL }}"
           proxmox_user = "${{ secrets.PROXMOX_USER }}"
           proxmox_password = "${{ secrets.PROXMOX_PASSWORD }}"
@@ -64,52 +43,36 @@ jobs:
           terraform_password = "${{ secrets.TERRAFORM_PASSWORD }}"
           proxmox_tls_insecure = "${{ secrets.PROXMOX_TLS_INSECURE }}"
           cloudflare_dns_token = "${{ secrets.CLOUDFLARE_DNS_TOKEN }}"
-          # Add other required variables from your terraform.tfvars
-          EOF
+          TFVARS
 
-      - name: Terraform Format Check
-        run: bash -c '/usr/local/bin/terraform fmt -check -recursive'
+      - name: Terraform Format
+        run: terraform fmt -check -recursive
         continue-on-error: true
 
       - name: Terraform Init
-        run: bash -c '/usr/local/bin/terraform init'
+        run: terraform init
 
       - name: Terraform Validate
-        run: bash -c '/usr/local/bin/terraform validate'
+        run: terraform validate
 
-      - name: Terraform Plan (Drift Detection)
+      - name: Terraform Plan
         id: plan
-        run: bash -c '/usr/local/bin/terraform plan -no-color -out=tfplan 2>&1 | tee plan-output.txt' && echo "exit_code=0" || echo "exit_code=$?"
-        continue-on-error: true
+        run: |
+          terraform plan -out=tfplan > plan.txt 2>&1
+          cat plan.txt
 
-      - name: Comment PR with Plan
-        if: github.event_name == 'pull_request' && steps.plan.outcome == 'success'
-        uses: actions/github-script@v7
+      - name: Upload plan output
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const planOutput = fs.readFileSync('plan-output.txt', 'utf8');
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## Terraform Plan Output\n\`\`\`\n${planOutput}\n\`\`\``
-            });
+          name: terraform-plan
+          path: plan.txt
+          retention-days: 7
 
       - name: Upload state artifact
-        if: always() && steps.plan.outcome == 'success'
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: terraform-state
           path: terraform.tfstate
           retention-days: 30
-
-      - name: Terraform Plan Status
-        if: steps.plan.outcome == 'failure'
-        run: exit 1
-
-      - name: Show formatting changes
-        run: bash -c '/usr/local/bin/terraform fmt -recursive'
-        if: failure()
