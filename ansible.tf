@@ -140,7 +140,7 @@ resource "null_resource" "ansible_provisioner" {
       type        = "ssh"
       user        = "root"
       host        = proxmox_virtual_environment_container.this[each.key].ipv4.veth0
-      private_key = file("~/.ssh/id_ed25519") # Adjust path to your private key
+      private_key = file(pathexpand("~/.ssh/id_ed25519"))
       timeout     = "5m"
     }
   }
