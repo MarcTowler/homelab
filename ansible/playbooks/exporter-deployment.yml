@@ -5,7 +5,7 @@
 
 # Install Node Exporter on all hosts that require it
 - name: Install Node Exporter on monitored hosts
-  hosts: node_exporters, proxmox_node_exporters
+  hosts: node_exporters, proxmox_node_exporters, monitoring
   gather_facts: yes
   become: yes
 

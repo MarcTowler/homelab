@@ -46,3 +46,58 @@
       wait_for:
         port: 8080
         delay: 5
+
+    - name: Get rclone
+      shell: "curl https://rclone.org/install.sh | bash"
+      register: rclone_install
+      changed_when: "'rclone' not in rclone_install.stdout"
+
+    - name: Create rclone config directory
+      file:
+        path: ~/.config/rclone
+        state: directory
+        mode: '0700'
+    
+    - name: Create rclone config file
+      copy:
+        dest: ~/.config/rclone/rclone.conf
+        content: |
+          [remote]
+          type = drive
+          scope = drive
+          token = {"access_token": "{{ rclone_token }}", "token_type":"Bearer","refresh_token": "{{ rclone_refresh_token }}","expiry":"{{ rclone_token_expiry }}","expires_in":3599}
+          team_drive = 
+    
+    - name: Create AMP backup script
+      copy:
+        dest: /usr/local/bin/amp_backup.sh
+        mode: '0755'
+        content: |
+          #!/bin/bash
+
+          # --- Settings ---
+          LOCAL_BACKUP_DIR="/home/amp/.ampdata/instances/LocalServer01/Backups"  # Where your plugin saves the zip
+          GDRIVE_REMOTE="gdrive:MinecraftBackups"
+          LOG_FILE="/var/log/mc_backup.log"
+
+          # Add a timestamp to the log
+          echo "--- Backup started at $(date) ---" >> $LOG_FILE
+
+          # --- The Action ---
+          # Using 'copy' keeps the zip on your LXC AND sends it to Google.
+          # Using 'move' sends it to Google and deletes it from the LXC.
+          rclone copy "$LOCAL_BACKUP_DIR" "$GDRIVE_REMOTE" --update --verbose >> $LOG_FILE 2>&1
+
+          # --- Optional: Cleanup GDrive ---
+          # Deletes backups older than 30 days from Google Drive to save space
+          rclone delete --min-age 30d "$GDRIVE_REMOTE" >> $LOG_FILE 2>&1
+
+          echo "--- Backup finished at $(date) ---" >> $LOG_FILE
+    
+    - name: Create cron job for AMP backup
+      cron:
+        name: "AMP Minecraft Backup"
+        user: amp
+        minute: "0"
+        hour: "2"
+        job: "/usr/local/bin/amp_backup.sh"
