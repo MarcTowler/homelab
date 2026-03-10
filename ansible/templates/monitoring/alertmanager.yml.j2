@@ -4,7 +4,6 @@ alerting:
 global:
   resolve_timeout: 5m
   slack_api_url: '{{ slack_webhook_url | default("") }}'
-  # Discord webhook URLs are configured per receiver
 
 route:
   receiver: 'default'
@@ -27,49 +26,22 @@ route:
 
 receivers:
   - name: 'default'
-    {% if slack_webhook_url is defined and slack_webhook_url %}
     slack_configs:
       - channel: '#alerts'
         title: 'Homelab Alert: {{ .GroupLabels.alertname }}'
         text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
-    {% endif %}
-    {% if discord_webhook_url is defined and discord_webhook_url %}
-    discord_configs:
-      - webhook_url: '{{ discord_webhook_url }}'
-        title: 'Homelab Alert: {{ .GroupLabels.alertname }}'
-        message: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
-    {% endif %}
 
   - name: 'critical'
-    {% if slack_webhook_url is defined and slack_webhook_url %}
     slack_configs:
       - channel: '#critical-alerts'
         title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
         text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
-    {% endif %}
-    {% if discord_webhook_url_critical is defined and discord_webhook_url_critical %}
-    discord_configs:
-      - webhook_url: '{{ discord_webhook_url_critical }}'
-        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
-        message: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
-    {% endif %}
 
   - name: 'warning'
-    {% if slack_webhook_url is defined and slack_webhook_url %}
     slack_configs:
       - channel: '#alerts'
         title: '⚠️ WARNING: {{ .GroupLabels.alertname }}'
         text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
-    {% endif %}
-    {% if discord_webhook_url is defined and discord_webhook_url %}
-    discord_configs:
-      - webhook_url: '{{ discord_webhook_url }}'
-        title: '⚠️ WARNING: {{ .GroupLabels.alertname }}'
-        message: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
-    {% endif %}
-
-  # Default null receiver (silences alerts if no webhooks configured)
-  - name: 'null'
 
 inhibit_rules:
   - source_match:

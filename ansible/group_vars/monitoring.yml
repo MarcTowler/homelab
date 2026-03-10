@@ -14,14 +14,6 @@ grafana_port: 3000
 grafana_domain: "grafana.{{ domain_name | default('local') }}"
 vault_grafana_admin_password: "{{ vault_grafana_admin_password_value }}"
 
-# AlertManager Notification Channels
-# Slack (optional)
-slack_webhook_url: "{{ vault_slack_webhook_url | default('') }}"
-
-# Discord (optional) - set in vault/inventory/secrets.yml
-discord_webhook_url: "{{ vault_discord_webhook_url | default('') }}"  # General alerts channel
-discord_webhook_url_critical: "{{ vault_discord_webhook_url_critical | default('') }}"  # Critical alerts channel
-
 # Node Exporter Configuration
 node_exporter_port: 9100
 node_exporter_version: "1.7.0"
@@ -31,27 +23,12 @@ mysql_exporter_port: 9104
 mysql_exporter_version: "0.15.0"
 vault_mysql_prometheus_password: "{{ vault_mysql_prometheus_password_value }}"
 
-# Alert thresholds (in percentage)
+# Alert thresholds
 alerts:
-  # CPU Alerts
-  cpu_critical_threshold: 95  # Immediate alert
-  cpu_warning_threshold: 90   # Alert after 2 minutes
-  cpu_critical_duration: 1m   # Duration for critical alert
-  cpu_warning_duration: 2m    # Duration for warning alert
-  
-  # Memory Alerts
-  memory_critical_threshold: 95  # Immediate alert
-  memory_warning_threshold: 85   # Alert after 2 minutes
-  memory_critical_duration: 1m   # Duration for critical alert
-  memory_warning_duration: 2m    # Duration for warning alert
-  
-  # Disk Alerts
-  disk_warning_threshold: 90  # Alert after 5 minutes
-  disk_warning_duration: 5m
-  
-  # Service/Node Alerts
+  cpu_threshold: 80
+  memory_threshold: 85
+  disk_threshold: 85
   service_down_timeout: 3m
-  node_down_timeout: 5m
 
 # Proxmox Cluster Nodes (for Prometheus scrape config)
 cluster_nodes:
