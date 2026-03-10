@@ -92,16 +92,6 @@ containers = {
     tags       = ["npm", "ubuntu"]
     exporters  = ["node"]
   },
-  traefik = {
-    lxc_id     = 1005
-    cores      = 2
-    memory     = 2048
-    node       = "arcanine"
-    ip_address = "dhcp"
-    image      = "ubuntu_2204"
-    tags       = ["traefik", "ubuntu"]
-    exporters  = ["node"]
-  },
   monitoring = {
     lxc_id     = 1006
     cores      = 4
@@ -128,6 +118,7 @@ containers = {
     lxc_id     = 1007
     cores      = 8
     memory     = 24576
+    disk_size  = 100
     node       = "pawmot"
     ip_address = "dhcp"
     image      = "ubuntu_2204"
@@ -135,16 +126,9 @@ containers = {
       nesting = true
       keyctl  = true
     }
-    mount_points = [
-      {
-        volume = "local-lvm"
-        size   = "100G"
-        path   = "/mnt/game-data"
-      }
-    ]
     tags      = ["game-server", "ubuntu"]
     exporters = ["node"]
-  },
+  }/* ,
   github-runner = {
     lxc_id     = 1010
     cores      = 4
@@ -186,7 +170,7 @@ containers = {
     ]
     tags      = ["github-runner", "ci-cd", "ubuntu"]
     exporters = ["node"]
-  }
+  } */
 }
 
 images = {

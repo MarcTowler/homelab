@@ -14,22 +14,12 @@
     "exporters":
     - "node"
     "hostname": "game-server"
-    "ip": "10.0.1.41"
+    "ip": "10.0.1.48"
   "gapi":
     "exporters":
     - "node"
     "hostname": "gapi"
     "ip": "10.0.1.38"
-  "github-runner":
-    "exporters":
-    - "node"
-    "hostname": "github-runner"
-    "ip": "10.0.1.182"
-  "github-runner-personal":
-    "exporters":
-    - "node"
-    "hostname": "github-runner-personal"
-    "ip": "10.0.1.131"
   "homepage":
     "exporters":
     - "node"
@@ -45,11 +35,6 @@
     - "node"
     "hostname": "site"
     "ip": "10.0.1.166"
-  "traefik":
-    "exporters":
-    - "node"
-    "hostname": "traefik"
-    "ip": "10.0.1.165"
 "proxmox_nodes_list":
 - "exporters":
   - "node"

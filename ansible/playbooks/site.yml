@@ -26,7 +26,7 @@
 
 - name: Configure homepage server
   import_playbook: homepage.yml
-
+  
 - name: Configure monitoring stack
   import_playbook: monitoring.yml
 

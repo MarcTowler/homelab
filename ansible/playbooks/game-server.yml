@@ -88,13 +88,15 @@
       copy:
         dest: /usr/local/bin/amp_backup.sh
         mode: '0755'
+        owner: amp
+        group: amp
         content: |
           #!/bin/bash
 
           # --- Settings ---
           LOCAL_BACKUP_DIR="/home/amp/.ampdata/instances/LocalServer01/Backups"  # Where your plugin saves the zip
           GDRIVE_REMOTE="gdrive:MinecraftBackups"
-          LOG_FILE="/var/log/mc_backup.log"
+          LOG_FILE="/home/amp/backup.log"
 
           # Add a timestamp to the log
           echo "--- Backup started at $(date) ---" >> $LOG_FILE

@@ -13,7 +13,7 @@
     "vmid": 1000
   "game-server":
     "icon": "amp.png"
-    "ip": "10.0.1.41"
+    "ip": "10.0.1.48"
     "name": "game-server"
     "node": "pawmot"
     "vmid": 1007
@@ -23,18 +23,6 @@
     "name": "gapi"
     "node": "arcanine"
     "vmid": 1002
-  "github-runner":
-    "icon": "github.png"
-    "ip": "10.0.1.182"
-    "name": "github-runner"
-    "node": "growlithe"
-    "vmid": 1010
-  "github-runner-personal":
-    "icon": "github.png"
-    "ip": "10.0.1.131"
-    "name": "github-runner-personal"
-    "node": "growlithe"
-    "vmid": 1011
   "homepage":
     "icon": "homepage.png"
     "ip": "10.0.1.178"
@@ -53,9 +41,3 @@
     "name": "site"
     "node": "arcanine"
     "vmid": 1003
-  "traefik":
-    "icon": "traefik.png"
-    "ip": "10.0.1.165"
-    "name": "traefik"
-    "node": "arcanine"
-    "vmid": 1005
