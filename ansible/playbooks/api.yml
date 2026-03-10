@@ -10,8 +10,13 @@
     app_user: www-data
     app_group: www-data
     php_version: "8.1"
+    domain_name: "itslit.me.uk"
 
   tasks:
+    - name: Load vault secrets
+      include_vars:
+        file: ../inventory/secrets.yml
+
     - name: Create application directory
       file:
         path: "{{ app_root }}"
@@ -61,11 +66,32 @@
         key_file: "/root/.ssh/api_deploy_key"
       notify: restart apache2
 
+    - name: Install Composer dependencies
+      shell: "cd {{ app_root }} && composer install --no-interaction --optimize-autoloader --no-cache"
+      changed_when: false
+      notify: restart apache2
+
     - name: Clean up temporary Deploy Key
       file:
         path: "/tmp/api_deploy_key"
         state: absent
       notify: restart apache2
+    
+    - name: Ensure the Config directory exists
+      file:
+        path: "{{ app_root }}/src/Config"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: 0755
+
+    - name: Copy site.ini to the API filesystem
+      template:
+        src: ../templates/services/site.ini.j2
+        dest: "{{ app_root }}/src/Config/site.ini"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0644'
 
     - name: Configure PHP (php.ini)
       lineinfile:

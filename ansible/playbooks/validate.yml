@@ -194,12 +194,6 @@
           mysql_connectivity.query_result is not defined
       changed_when: false
 
-
-- name: Validation Summary
-  hosts: localhost
-  gather_facts: no
-  become: no
-
   tasks:
     - name: Display validation summary
       debug:

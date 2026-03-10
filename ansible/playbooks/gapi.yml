@@ -10,6 +10,7 @@
     app_user: www-data
     app_group: www-data
     php_version: "8.1"
+    domain_name: "itslit.me.uk"
 
   tasks:
     - name: Create application directory
@@ -59,6 +60,11 @@
         update: yes
         accept_hostkey: yes
         key_file: "/root/.ssh/gapi_deploy_key"
+      notify: restart apache2
+
+    - name: Install Composer dependencies
+      shell: "cd {{ app_root }} && composer install --no-interaction --optimize-autoloader --no-cache"
+      changed_when: false
       notify: restart apache2
 
     - name: Clean up temporary Deploy Key
