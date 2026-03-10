@@ -5,34 +5,55 @@ groups:
       # Node Exporter Alerts
       - alert: NodeDown
         expr: up{job=~"proxmox-nodes|api-servers|web-services"} == 0
-        for: 5m
+        for: {{ alerts.node_down_timeout }}
         labels:
           severity: critical
         annotations:
           summary: "Node {% raw %}{{ $labels.instance }}{% endraw %} is down"
-          description: "{% raw %}{{ $labels.instance }}{% endraw %} has been unreachable for 5 minutes."
+          description: "{% raw %}{{ $labels.instance }}{% endraw %} has been unreachable for {{ alerts.node_down_timeout }}."
+
+      # CPU Alerts
+      - alert: CriticalCPUUsage
+        expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > {{ alerts.cpu_critical_threshold }}
+        for: {{ alerts.cpu_critical_duration }}
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL: CPU usage at {{ alerts.cpu_critical_threshold }}%+ on {% raw %}{{ $labels.instance }}{% endraw %}"
+          description: "CPU usage is {% raw %}{{ $value | humanize }}{% endraw %}% on {% raw %}{{ $labels.instance }}{% endraw %}"
 
       - alert: HighCPUUsage
-        expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
-        for: 5m
+        expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > {{ alerts.cpu_warning_threshold }}
+        for: {{ alerts.cpu_warning_duration }}
         labels:
           severity: warning
         annotations:
           summary: "High CPU usage on {% raw %}{{ $labels.instance }}{% endraw %}"
           description: "CPU usage is {% raw %}{{ $value | humanize }}{% endraw %}% on {% raw %}{{ $labels.instance }}{% endraw %}"
 
+      # Memory Alerts
+      - alert: CriticalMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > {{ alerts.memory_critical_threshold }}
+        for: {{ alerts.memory_critical_duration }}
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL: Memory usage at {{ alerts.memory_critical_threshold }}%+ on {% raw %}{{ $labels.instance }}{% endraw %}"
+          description: "Memory usage is {% raw %}{{ $value | humanize }}{% endraw %}% on {% raw %}{{ $labels.instance }}{% endraw %}"
+
       - alert: HighMemoryUsage
-        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
-        for: 5m
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > {{ alerts.memory_warning_threshold }}
+        for: {{ alerts.memory_warning_duration }}
         labels:
           severity: warning
         annotations:
           summary: "High memory usage on {% raw %}{{ $labels.instance }}{% endraw %}"
           description: "Memory usage is {% raw %}{{ $value | humanize }}{% endraw %}% on {% raw %}{{ $labels.instance }}{% endraw %}"
 
+      # Disk Alerts
       - alert: HighDiskUsage
-        expr: (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"})) > 0.85
-        for: 5m
+        expr: (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"})) > 0.90
+        for: {{ alerts.disk_warning_duration }}
         labels:
           severity: warning
         annotations:
@@ -72,9 +93,9 @@ groups:
     rules:
       - alert: ServiceDown
         expr: up{job=~"api-servers|web-services"} == 0
-        for: 3m
+        for: {{ alerts.service_down_timeout }}
         labels:
           severity: critical
         annotations:
           summary: "Service {% raw %}{{ $labels.job }}{% endraw %} on {% raw %}{{ $labels.instance }}{% endraw %} is down"
-          description: "{% raw %}{{ $labels.instance }}{% endraw %} has been unreachable for 3 minutes."
+          description: "{% raw %}{{ $labels.instance }}{% endraw %} has been unreachable for {{ alerts.service_down_timeout }}."

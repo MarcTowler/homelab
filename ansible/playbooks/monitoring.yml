@@ -24,6 +24,21 @@
       - pawmot
       - murkrow
     domain_name: "itslit.me.uk"
+    
+    # Alert thresholds
+    alerts:
+      cpu_critical_threshold: 95
+      cpu_warning_threshold: 90
+      cpu_critical_duration: 1m
+      cpu_warning_duration: 2m
+      memory_critical_threshold: 95
+      memory_warning_threshold: 85
+      memory_critical_duration: 1m
+      memory_warning_duration: 2m
+      disk_warning_threshold: 90
+      disk_warning_duration: 5m
+      service_down_timeout: 3m
+      node_down_timeout: 5m
 
   tasks:
     # Load vault secrets
