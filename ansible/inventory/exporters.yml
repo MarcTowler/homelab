@@ -29,7 +29,7 @@
     "exporters":
     - "node"
     "hostname": "monitoring"
-    "ip": "10.0.1.73"
+    "ip": "10.0.1.87"
   "site":
     "exporters":
     - "node"

@@ -4,7 +4,7 @@ global:
   evaluation_interval: 30s
   external_labels:
     cluster: 'homelab'
-    environment: '{{ environment }}'
+    environment: 'production'
 
 # Alerting configuration
 alerting:
@@ -23,7 +23,7 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:{{ prometheus_port }}']
 
-  # Dynamic Node Exporters - All hosts with node exporter enabled
+  # Node Exporters - All hosts with node exporter enabled
   - job_name: 'node-exporters'
     static_configs:
 {% if groups['node_exporters'] is defined %}
@@ -43,8 +43,14 @@ scrape_configs:
           instance: '{{ host }}.{{ domain_name }}'
 {% endfor %}
 {% endif %}
+    relabel_configs:
+      # Extract hostname from FQDN:port format for LXC containers (only if starts with letter)
+      - source_labels: [__address__]
+        regex: '^([a-zA-Z][a-zA-Z0-9.-]*):.*'
+        target_label: instance
+        replacement: '${1}'
 
-  # Dynamic MySQL Exporters - All hosts with mysql exporter enabled
+  # MySQL Exporters - All hosts with mysql exporter enabled
 {% if groups.get('mysql_exporters', []) | length > 0 %}
   - job_name: 'mysql-exporters'
     static_configs:
@@ -55,7 +61,9 @@ scrape_configs:
         labels:
           group: 'database'
     relabel_configs:
+      # Extract hostname from FQDN:port format
       - source_labels: [__address__]
+        regex: '([^:]+):.*'
         target_label: instance
         replacement: '${1}'
 {% endif %}

@@ -31,7 +31,7 @@
     "vmid": 1004
   "monitoring":
     "icon": "grafana.png"
-    "ip": "10.0.1.73"
+    "ip": "10.0.1.87"
     "name": "monitoring"
     "node": "arcanine"
     "vmid": 1006

@@ -191,7 +191,7 @@
     - name: Copy Grafana dashboards config
       template:
         src: ../templates/monitoring/grafana-dashboards.yml.j2
-        dest: "{{ grafana_data_dir }}/provisioning/dashboards.yml"
+        dest: "{{ grafana_data_dir }}/provisioning/dashboards/dashboards.yml"
         owner: "{{ grafana_user }}"
         group: "{{ grafana_user }}"
         mode: '0644'
