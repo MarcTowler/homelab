@@ -1,7 +1,13 @@
 [site]
 TOKEN = {{ php_token}}
 TEST_TOKEN = {{ php_test_token}}
-BASE_URL = "https://{{ ansible_hostname }}.{{ domain_name }}/"
+BASE_URL = "http://{{ ansible_hostname }}.{{ domain_name }}/"
+{% if ansible_hostname == "site" %}
+API_USER = {{ api_user }}
+API_KEY = {{ php_token}}
+NAME  = "ItsLittany | Streamer, Gamer and Tech Enthusiast"
+TITLE = "itslit.uk | Multiplayer Gaming and Live-streaming Professional"
+{% endif %}
 
 [twitch]
 CLIENT_ID     = {{ twitch_client_id }}

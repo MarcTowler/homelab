@@ -12,8 +12,8 @@
 - name: Deploy monitoring exporters
   import_playbook: exporter-deployment.yml
 
-- name: Deploy GitHub Actions runners
-  import_playbook: github-runner.yml
+#- name: Deploy GitHub Actions runners
+#  import_playbook: github-runner.yml
 
 - name: Configure API server
   import_playbook: api.yml
