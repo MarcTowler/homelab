@@ -8,6 +8,24 @@
     ErrorLog ${APACHE_LOG_DIR}/api_error.log
     CustomLog ${APACHE_LOG_DIR}/api_access.log combined
     
+    # Trust Traefik reverse proxy (internal network)
+    # This tells Apache to read X-Forwarded-* headers from Traefik
+    <IfModule mod_remoteip.c>
+        RemoteIPHeader X-Forwarded-For
+        RemoteIPTrustedProxy 127.0.0.1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+    </IfModule>
+    
+    # Make PHP aware of HTTPS from X-Forwarded-Proto header
+    <IfModule mod_setenvif.c>
+        SetEnvIf X-Forwarded-Proto "https" HTTPS=on
+        SetEnvIf X-Forwarded-Proto "https" SERVER_PORT=443
+    </IfModule>
+    
+    # Preserve original request headers from client
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-Proto "http"
+    RequestHeader set X-Forwarded-For "%{REMOTE_ADDR}s"
+    
     # Security headers
     Header always set X-Frame-Options "SAMEORIGIN"
     Header always set X-Content-Type-Options "nosniff"

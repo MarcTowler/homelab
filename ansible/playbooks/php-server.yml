@@ -44,6 +44,9 @@
         - php8.1
         - headers
         - ssl
+        - remoteip
+        - proxy
+        - proxy_http
       notify: reload apache2
 
     - name: Disable Apache default site

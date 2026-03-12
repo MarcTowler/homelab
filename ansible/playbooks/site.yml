@@ -9,6 +9,9 @@
 - name: Configure MySQL server
   import_playbook: mysql-server.yml
 
+- name: Deploy Traefik reverse proxy
+  import_playbook: traefik.yml
+
 - name: Deploy monitoring exporters
   import_playbook: exporter-deployment.yml
 

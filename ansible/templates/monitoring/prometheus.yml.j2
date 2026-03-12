@@ -68,6 +68,26 @@ scrape_configs:
         replacement: '${1}'
 {% endif %}
 
+  # Traefik Reverse Proxy Metrics
+{% if groups.get('traefik', []) | length > 0 %}
+  - job_name: 'traefik'
+    static_configs:
+      - targets:
+{% for host in groups['traefik'] %}
+          - '{{ host }}.{{ domain_name }}:8080'
+{% endfor %}
+        labels:
+          group: 'networking'
+          service: 'traefik'
+    metrics_path: '/metrics'
+    relabel_configs:
+      # Extract hostname from FQDN:port format
+      - source_labels: [__address__]
+        regex: '([^:]+):.*'
+        target_label: instance
+        replacement: '${1}'
+{% endif %}
+
   # Optional: Proxmox API Monitoring (requires proxmox_exporter)
   # - job_name: 'proxmox-api'
   #   static_configs:

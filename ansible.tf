@@ -35,6 +35,15 @@ resource "local_file" "ansible_inventory" {
             } if can(regex("monitoring", name))
           }
         }
+        traefik = {
+          hosts = {
+            for name, cfg in var.containers :
+            name => {
+              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_user = "root"
+            } if can(regex("traefik", name))
+          }
+        }
         proxmox_nodes = {
           hosts = {
             for name, cfg in var.nodes :

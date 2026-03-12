@@ -1,0 +1,57 @@
+# Traefik Dynamic Configuration - Services
+# Auto-generated from Ansible inventory
+# Generated at: {{ ansible_date_time.iso8601 }}
+
+# Service IP mapping (from Ansible inventory)
+{% set service_hosts = {
+  'api': '10.0.1.47',
+  'gapi': '10.0.1.38',
+  'site': '10.0.1.166',
+  'homepage': '10.0.1.178',
+  'monitoring': '10.0.1.87',
+  'monitoring_prometheus': '10.0.1.87',
+  'monitoring_grafana': '10.0.1.87',
+  'game-server': '10.0.1.48'
+} %}
+
+# Generate routers and services for each mapped service
+{% for service_name, port in service_port_mapping.items() %}
+
+# {{ service_name | replace('_', ' ') | title }} Service - HTTP to HTTPS redirect
+[http.routers.{{ service_name }}-http]
+  rule = "Host(`{{ service_subdomains[service_name] }}.{{ domain_name }}`)"
+  service = "{{ service_name }}-service"
+  entryPoints = ["web"]
+  middlewares = ["redirect-https"]
+
+# {{ service_name | replace('_', ' ') | title }} Service - HTTPS
+[http.routers.{{ service_name }}]
+  rule = "Host(`{{ service_subdomains[service_name] }}.{{ domain_name }}`)"
+  service = "{{ service_name }}-service"
+  entryPoints = ["websecure"]
+  
+  [http.routers.{{ service_name }}.tls]
+    certResolver = "letsencrypt"
+    [[http.routers.{{ service_name }}.tls.domains]]
+      main = "{{ domain_name }}"
+      sans = ["*.{{ domain_name }}"]
+
+[http.services.{{ service_name }}-service]
+  [http.services.{{ service_name }}-service.loadBalancer]
+    [[http.services.{{ service_name }}-service.loadBalancer.servers]]
+      url = "http://{{ service_hosts[service_name] }}:{{ port }}"
+
+{% endfor %}
+
+# Middleware for HTTP to HTTPS redirect
+[http.middlewares]
+  [http.middlewares.redirect-https.redirectScheme]
+    scheme = "https"
+    permanent = true
+
+# Traefik Dashboard & API (internal - no external exposure)
+[http.routers.traefik-dashboard]
+  rule = "Path(`/dashboard`) || Path(`/api`)"
+  service = "api@internal"
+  entryPoints = ["traefik"]
+  # No TLS on internal entry point

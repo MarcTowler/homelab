@@ -35,6 +35,11 @@
     - "node"
     "hostname": "site"
     "ip": "10.0.1.166"
+  "traefik":
+    "exporters":
+    - "node"
+    "hostname": "traefik"
+    "ip": "10.0.1.123"
 "proxmox_nodes_list":
 - "exporters":
   - "node"

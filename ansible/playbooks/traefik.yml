@@ -1,0 +1,214 @@
+---
+# Traefik Reverse Proxy Deployment
+- name: Install and configure Traefik reverse proxy
+  hosts: traefik
+  gather_facts: yes
+  become: yes
+
+  vars:
+    traefik_version: "3.6.10"
+    traefik_user: "traefik"
+    traefik_group: "traefik"
+    traefik_home: "/var/lib/traefik"
+    traefik_config_dir: "/etc/traefik"
+    traefik_http_port: 80
+    traefik_https_port: 443
+    traefik_api_port: 8080
+    traefik_api_dashboard: true
+    traefik_acme_email: "marc@marctowler.co.uk"
+    domain_name: "itslit.me.uk"
+    
+    # Service to port mapping for auto-routing
+    service_port_mapping:
+      api: 80
+      gapi: 80
+      site: 80
+      homepage: 3000
+      monitoring: 3000
+      monitoring_prometheus: 9090
+      monitoring_grafana: 3000
+      game-server: 8080
+    
+    # Service subdomains
+    service_subdomains:
+      api: "api"
+      gapi: "gapi"
+      site: "site"
+      homepage: "homepage"
+      monitoring: "monitoring"
+      monitoring_prometheus: "prometheus"
+      monitoring_grafana: "grafana"
+      game-server: "game"
+
+  tasks:
+    # Load vault secrets for Cloudflare and other credentials
+    - name: Load vault secrets
+      include_vars:
+        file: ../inventory/secrets.yml
+
+    # Install dependencies
+    - name: Update package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - wget
+          - ca-certificates
+        state: present
+
+    # Create traefik user and group
+    - name: Create traefik group
+      group:
+        name: "{{ traefik_group }}"
+        state: present
+
+    - name: Create traefik user
+      user:
+        name: "{{ traefik_user }}"
+        group: "{{ traefik_group }}"
+        home: "{{ traefik_home }}"
+        shell: /usr/sbin/nologin
+        createhome: yes
+        state: present
+
+    # Download and install Traefik binary
+    - name: Download Traefik binary
+      get_url:
+        url: "https://github.com/traefik/traefik/releases/download/v{{ traefik_version }}/traefik_v{{ traefik_version }}_linux_amd64.tar.gz"
+        dest: "/tmp/traefik_{{ traefik_version }}_linux_amd64.tar.gz"
+        mode: '0644'
+
+    - name: Extract Traefik binary
+      unarchive:
+        src: "/tmp/traefik_{{ traefik_version }}_linux_amd64.tar.gz"
+        dest: /usr/local/bin
+        remote_src: yes
+        mode: '0755'
+
+    - name: Cleanup Traefik tarball
+      file:
+        path: "/tmp/traefik_{{ traefik_version }}_linux_amd64.tar.gz"
+        state: absent
+
+    # Create configuration directories
+    - name: Create Traefik config directory
+      file:
+        path: "{{ traefik_config_dir }}"
+        state: directory
+        owner: "{{ traefik_user }}"
+        group: "{{ traefik_group }}"
+        mode: '0755'
+
+    - name: Create Traefik dynamic config directory
+      file:
+        path: "{{ traefik_config_dir }}/dynamic"
+        state: directory
+        owner: "{{ traefik_user }}"
+        group: "{{ traefik_group }}"
+        mode: '0755'
+
+    - name: Create Traefik acme directory
+      file:
+        path: "{{ traefik_config_dir }}/acme"
+        state: directory
+        owner: "{{ traefik_user }}"
+        group: "{{ traefik_group }}"
+        mode: '0755'
+
+    - name: Create Traefik home directory
+      file:
+        path: "{{ traefik_home }}"
+        state: directory
+        owner: "{{ traefik_user }}"
+        group: "{{ traefik_group }}"
+        mode: '0755'
+
+    - name: Create Traefik log directory
+      file:
+        path: /var/log/traefik
+        state: directory
+        owner: "{{ traefik_user }}"
+        group: "{{ traefik_group }}"
+        mode: '0755'
+
+    - name: Initialize ACME JSON file
+      file:
+        path: "{{ traefik_config_dir }}/acme/acme.json"
+        state: touch
+        owner: "{{ traefik_user }}"
+        group: "{{ traefik_group }}"
+        mode: '0600'
+        modification_time: now
+        access_time: now
+
+    # Deploy main Traefik configuration
+    - name: Deploy main Traefik configuration
+      template:
+        src: ../templates/traefik/traefik.toml.j2
+        dest: "{{ traefik_config_dir }}/traefik.toml"
+        owner: "{{ traefik_user }}"
+        group: "{{ traefik_group }}"
+        mode: '0644'
+
+    # Generate dynamic service routes from inventory
+    - name: Deploy auto-generated service routes
+      template:
+        src: ../templates/traefik/traefik-services.toml.j2
+        dest: "{{ traefik_config_dir }}/dynamic/services.toml"
+        owner: "{{ traefik_user }}"
+        group: "{{ traefik_group }}"
+        mode: '0644'
+
+    # Deploy Traefik systemd service
+    - name: Deploy Traefik systemd service
+      template:
+        src: ../templates/traefik/traefik.service.j2
+        dest: /etc/systemd/system/traefik.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: systemd daemon reload
+
+    # Enable and start Traefik service
+    - name: Enable Traefik service
+      systemd:
+        name: traefik
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Start Traefik service
+      systemd:
+        name: traefik
+        state: started
+
+    # Wait for Traefik to be ready
+    - name: Wait for Traefik API to be ready
+      wait_for:
+        port: 8080
+        delay: 2
+        timeout: 30
+
+    # Verify Traefik is running
+    - name: Check Traefik service status
+      command: systemctl is-active traefik
+      register: traefik_status
+      changed_when: false
+      failed_when: traefik_status.rc not in [0, 3]
+
+    - name: Display Traefik status
+      debug:
+        msg: "Traefik service status: {{ traefik_status.stdout }}"
+
+  handlers:
+    - name: restart traefik
+      systemd:
+        name: traefik
+        state: restarted
+
+    - name: systemd daemon reload
+      systemd:
+        daemon_reload: yes

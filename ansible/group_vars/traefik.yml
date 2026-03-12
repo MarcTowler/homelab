@@ -1,0 +1,38 @@
+---
+# Traefik group variables - service to port mapping
+# Maps container names to their backend ports
+service_port_mapping:
+  api: 80
+  gapi: 80
+  site: 80
+  homepage: 3000
+  monitoring: 3000
+  monitoring_prometheus: 9090
+  monitoring_grafana: 3000
+  game-server: 8080
+
+# Domain name (inherited from all.yml or set explicitly)
+domain_name: "itslit.me.uk"
+
+# Service subdomains - customize routing names if different from container names
+service_subdomains:
+  api: "api"
+  gapi: "gapi"
+  site: "site"
+  homepage: "homepage"
+  monitoring: "monitoring"
+  monitoring_prometheus: "prometheus"
+  monitoring_grafana: "grafana"
+  game-server: "game"
+
+# Traefik API configuration
+traefik_api_port: 8080
+traefik_api_dashboard: true
+
+# Entry points
+traefik_http_port: 80
+traefik_https_port: 443
+
+# SSL/TLS
+traefik_https_enabled: true
+traefik_acme_email: "marc@marctowler.co.uk"

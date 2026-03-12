@@ -92,6 +92,16 @@ containers = {
     tags       = ["npm", "ubuntu"]
     exporters  = ["node"]
   },
+  traefik = {
+    lxc_id     = 1005
+    cores      = 2
+    memory     = 2048
+    node       = "arcanine"
+    ip_address = "dhcp"
+    image      = "ubuntu_2204"
+    tags       = ["traefik", "reverse-proxy", "ubuntu"]
+    exporters  = ["node"]
+  },
   monitoring = {
     lxc_id     = 1006
     cores      = 4
@@ -113,7 +123,7 @@ containers = {
     ]
     tags      = ["monitoring", "prometheus", "grafana", "ubuntu"]
     exporters = ["node"]
-  },
+  },  
   game-server = {
     lxc_id     = 1007
     cores      = 8

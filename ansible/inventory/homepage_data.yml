@@ -41,3 +41,9 @@
     "name": "site"
     "node": "arcanine"
     "vmid": 1003
+  "traefik":
+    "icon": "traefik.png"
+    "ip": "10.0.1.123"
+    "name": "traefik"
+    "node": "arcanine"
+    "vmid": 1005

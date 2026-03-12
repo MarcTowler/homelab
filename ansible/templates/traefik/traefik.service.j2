@@ -1,0 +1,39 @@
+[Unit]
+Description=Traefik Reverse Proxy
+Documentation=https://doc.traefik.io/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+User=traefik
+Group=traefik
+
+# Environment variables for ACME/Cloudflare
+Environment="CLOUDFLARE_DNS_API_TOKEN={{ cloudflare_dns_token }}"
+Environment="CLOUDFLARE_ZONE_API_TOKEN={{ cloudflare_dns_token }}"
+
+# Traefik executable
+ExecStart=/usr/local/bin/traefik \
+  --configFile=/etc/traefik/traefik.toml
+
+# Process management
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=traefik
+
+# Security
+NoNewPrivileges=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/log/traefik /etc/traefik/acme /var/lib/traefik
+
+# Resource limits (adjust as needed)
+LimitNOFILE=1000000
+LimitNPROC=512
+
+[Install]
+WantedBy=multi-user.target
