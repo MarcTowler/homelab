@@ -5,7 +5,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=notify
+Type=simple
 User=traefik
 Group=traefik
 
@@ -14,8 +14,7 @@ Environment="CLOUDFLARE_DNS_API_TOKEN={{ cloudflare_dns_token }}"
 Environment="CLOUDFLARE_ZONE_API_TOKEN={{ cloudflare_dns_token }}"
 
 # Traefik executable
-ExecStart=/usr/local/bin/traefik \
-  --configFile=/etc/traefik/traefik.toml
+ExecStart=/usr/local/bin/traefik --configFile=/etc/traefik/traefik.toml
 
 # Process management
 Restart=always
@@ -24,12 +23,8 @@ StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=traefik
 
-# Security
+# Security - minimal sandboxing to avoid startup issues
 NoNewPrivileges=true
-PrivateDevices=true
-ProtectSystem=strict
-ProtectHome=yes
-ReadWritePaths=/var/log/traefik /etc/traefik/acme /var/lib/traefik
 
 # Resource limits (adjust as needed)
 LimitNOFILE=1000000
