@@ -13,7 +13,7 @@
         ping: "https://10.0.1.110"
         widget:
           type: proxmox
-          url: https://arcanine.itslit.me.uk:8006
+          url: https://10.0.1.110:8006
           username: Terraform@pam!api
           password: {{ arcanine_proxmox_token_secret }}
           node: arcanine
@@ -23,7 +23,7 @@
         ping: "https://10.0.1.113"
         widget:
           type: proxmox
-          url: https://fuecoco.itslit.me.uk:8006
+          url: https://10.0.1.113:8006
           username: Terraform@pam!api
           password: {{ fuecoco_proxmox_token_secret }}
           node: fuecoco
@@ -33,7 +33,7 @@
         ping: "https://10.0.1.111"
         widget:
           type: proxmox
-          url: https://growlithe.itslit.me.uk:8006
+          url: https://10.0.1.111:8006
           username: Terraform@pam!api
           password: {{ growlithe_proxmox_token_secret }}
           node: growlithe
@@ -43,7 +43,7 @@
         ping: "https://10.0.1.112"
         widget:
           type: proxmox
-          url: https://pawmot.itslit.me.uk:8006
+          url: https://10.0.1.112:8006
           username: Terraform@pam!api
           password: {{ pawmot_proxmox_token_secret }}
           node: pawmot
@@ -53,7 +53,7 @@
         ping: "https://10.0.1.114"
         widget:
           type: proxmox
-          url: https://murkrow.itslit.me.uk:8006
+          url: https://10.0.1.114:8006
           username: Terraform@pam!api
           password: {{ murkrow_proxmox_token_secret }}
           node: murkrow
@@ -70,40 +70,10 @@
 {% endfor %}
 
 - Developer:
-    - GitHub Runners:
-        icon: github.png
-        href: "https://github.com/ItsLit-Media-and-Development/settings/actions/runners"
-        ping: "http://localhost:3001/health"
-        widget:
-          type: customapi
-          url: http://localhost:3001/api/runners
-          mappings:
-            - field: summary.total
-              label: Total
-              format: number
-            - field: summary.active
-              label: Active
-              format: number
-            - field: summary.idle
-              label: Idle
-              format: number
-            - field: summary.offline
-              label: Offline
-              format: number
-    - Runner Jobs:
-        widget:
-          type: customapi
-          url: http://localhost:3001/api/runners
-          display: dynamic-list
-          mappings:
-            items: runners
-            name: name
-            label: current_job
-            format: text
     - Minecraft Server:
         icon: minecraft.png
-        href: "http://game-server.itslit.me.uk:8080"
-        ping: "http://game-server.itslit.me.uk:25565"
+        href: "https://game.itslit.me.uk"
+        ping: "http://minecraft.itslit.me.uk:25565"
         widget:
           type: minecraft
-          url: udp://game-server.itslit.me.uk:25565
+          url: udp://minecraft.itslit.me.uk:25565

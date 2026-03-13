@@ -29,6 +29,7 @@
   rule = "Host(`{{ service_subdomains[service_name] }}.{{ domain_name }}`)"
   service = "{{ service_name }}-service"
   entryPoints = ["websecure"]
+  middlewares = ["add-headers"]
   
   [http.routers.{{ service_name }}.tls]
     certResolver = "letsencrypt"
@@ -48,6 +49,13 @@
   [http.middlewares.redirect-https.redirectScheme]
     scheme = "https"
     permanent = true
+
+  # Headers middleware to ensure applications know they're behind HTTPS
+  [http.middlewares.add-headers.headers]
+    [http.middlewares.add-headers.headers.customRequestHeaders]
+      X-Forwarded-Proto = "https"
+      X-Forwarded-Host = "{{ domain_name }}"
+      X-Forwarded-Port = "443"
 
 # Traefik Dashboard & API (internal - no external exposure)
 [http.routers.traefik-dashboard]

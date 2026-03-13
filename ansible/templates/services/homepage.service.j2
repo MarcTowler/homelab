@@ -5,11 +5,20 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/var/www/homepage
-Environment=HOMEPAGE_ALLOWED_HOSTS=homepage.itslit.me.uk:3000
+WorkingDirectory=/var/www/homepage/.next/standalone
+# Tell the app about the reverse proxy setup
+Environment="HOMEPAGE_ALLOWED_HOSTS=homepage.itslit.me.uk,homepage.itslit.me.uk:3000"
+Environment="NODE_ENV=production"
+# Public URL seen by clients (for URL generation)
+Environment="NEXTAUTH_URL=https://homepage.itslit.me.uk"
+Environment="NEXT_PUBLIC_URL=https://homepage.itslit.me.uk"
 
-# Fix: Use /usr/bin/pnpm (or the result of 'which pnpm')
-ExecStart={{ pnpm_bin_path }} start
+# Ensure standalone server has access to static files
+# The Next.js standalone build expects static files at .next/standalone/.next/static
+ExecStartPre=/bin/sh -c 'rm -rf /var/www/homepage/.next/standalone/.next/static && cp -r /var/www/homepage/.next/static /var/www/homepage/.next/standalone/.next/'
+
+# Fix: Use standalone server for Next.js with standalone output configuration
+ExecStart=/usr/bin/node server.js
 
 Restart=always
 RestartSec=5

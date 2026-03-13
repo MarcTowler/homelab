@@ -190,14 +190,148 @@ ExecStart=/usr/bin/sudo -u traefik /usr/local/bin/traefik ...
 
 ---
 
-## Recommendations
+## Follow-up Issue: DNS Configuration Causing HTTPS Routing Failure (2026-03-13)
 
-### Immediate
-1. ✅ **Implemented**: Run Traefik as root in systemd service
-2. ✅ **Deployed**: Automated via Ansible template - `/home/marctowler/homelab/ansible/templates/traefik/traefik.service.j2`
+### Issue Summary
+After successful Traefik deployment and systemd service recovery, HTTPS routing failed for services (homepage, api, gapi, site) that relied on auto-registered DNS entries in OPNsense dnsmasq. Services like game, prometheus, and grafana that had manually-configured DNS entries worked correctly.
 
-### Short-term
-1. **Document in DNS setup**: Add note that Traefik runs with root privileges in this environment
+### Root Cause
+**OPNsense DHCP FQDN Setting**: The "DHCP FQDN" option in dnsmasq was enabled, which automatically registers unqualified LXC container names (api, gapi, site, homepage) to their actual container IPs instead of the Traefik reverse proxy IP (10.0.1.123).
+
+**DNS Resolution Pattern Found**:
+```
+WORKING (manually configured):
+  game.itslit.me.uk → 10.0.1.123 (Traefik)
+  prometheus.itslit.me.uk → 10.0.1.123 (Traefik)
+  grafana.itslit.me.uk → 10.0.1.123 (Traefik)
+
+BROKEN (auto-registered by DHCP FQDN):
+  api.itslit.me.uk → 10.0.1.47 (backend)
+  gapi.itslit.me.uk → 10.0.1.38 (backend)
+  site.itslit.me.uk → 10.0.1.166 (backend)
+  homepage.itslit.me.uk → 10.0.1.178 (backend)
+```
+
+### Investigation
+1. **Initial hypothesis**: Traefik TOML syntax error in customRequestHeaders middleware
+   - Found: `[http.middlewares.add-headers.headers.customRequestHeaders]` (nested table)
+   - Created fix: `customRequestHeaders = { "key" = "value" }` (inline table syntax)
+   - Deployed fix and restarted Traefik
+
+2.  **Testing after fix**: HTTPS still failed for api/gapi/site/homepage
+   - DNS test revealed the services resolved to backend IPs, not Traefik
+   - Other services (prometheus/grafana/game) resolved correctly to 10.0.1.123
+   - Pattern: Custom-configured DNS entries worked; auto-registered entries failed
+
+3. **Root cause identified**: OPNsense DHCP FQDN setting was registering containers under their actual IPs
+   - User disabled DHCP FQDN in OPNsense Services → Dnsmasq DNS & DHCP → General tab
+
+### Resolution
+**Action Taken**: Disabled DHCP FQDN in OPNsense dnsmasq  
+**Result**: All service hostnames now resolve to 10.0.1.123 (Traefik)
+
+**Post-Fix Verification**:
+```
+✓ All services resolve to Traefik: 10.0.1.123
+✓ HTTPS routing working for all services
+✓ TOML syntax change reverted - not needed
+✓ Traefik playbook redeployed with original template
+✓ All services returning correct HTTP status codes
+```
+
+### Key Finding
+The TOML syntax "error" was **not actually breaking Traefik**. The nested table syntax is valid TOML and Traefik parsed it correctly - the middleware was functioning as designed. **The real issue was DNS resolution bypassing Traefik entirely.**
+
+### Final Configuration Status
+- **Traefik TOML**: Original syntax retained (no changes needed)
+- **OPNsense DHCP FQDN**: Disabled
+- **DNS Configuration**: Service FQDNs now resolve to Traefik reverse proxy
+- **Middleware**: X-Forwarded-Proto, X-Forwarded-Host, X-Forwarded-Port headers properly forwarded
+- **Service Status**: All 8 services (api, gapi, site, homepage, monitoring, prometheus, grafana, game) accessible via HTTPS
+
+---
+
+## Follow-up Issue 2: Homepage Next.js Static Assets Returning 404 (2026-03-13)
+
+### Issue Summary
+After DNS routing was fixed and all services became accessible via HTTPS, the homepage application loaded successfully but all CSS/JavaScript assets were returning HTTP 404 errors. The homepage HTML loaded correctly, but the Next.js static chunks failed to serve, leaving the page unstyled and non-functional.
+
+### Root Cause
+The homepage containeris using Next.js in "standalone" output mode. This mode creates a self-contained server in `.next/standalone/` that includes its own `server.js` file and expects static files to be at `.next/standalone/.next/static/`. However, during the Ansible deployment:
+1. The Next.js build process created static files at `/var/www/homepage/.next/static/`
+2. The systemd service started the standalone server from `/var/www/homepage/.next/standalone/`
+3. The server looked for static files at `.next/standalone/.next/static/`, which didn't exist
+4. Result: All `/_next/static/chunks/*.js` and `/_next/static/css/*.css` requests returned 404
+
+### Investigation Process
+1. **Initial symptoms**: 
+   - `curl https://homepage.itslit.me.uk` → HTTP 200 (HTML loads)
+   - `curl https://homepage.itslit.me.uk/_next/static/chunks/8a783118-c270d7923c2b4ceb.js` → HTTP 404
+
+2. **Direct testing**: Connected directly to container:
+   - `curl http://localhost:3000/_next/static/chunks/...js` → Also 404
+   - Confirmed the files existed at `/var/www/homepage/.next/static/chunks/`
+   - Files were NOT accessible through standalone server's expected path
+
+3. **Root cause identified**: 
+   - Standalone server working directory was `/var/www/homepage/.next/standalone/`
+   - It looks for static files at `${CWD}/.next/static/`
+   - That path didn't exist; files were one level up
+
+### Solution Implemented
+**Action**: Updated systemd service to copy static files into the location where the standalone server expects them
+
+**Service Configuration** (`/etc/systemd/system/homepage.service`):
+```ini
+WorkingDirectory=/var/www/homepage/.next/standalone
+ExecStartPre=/bin/sh -c 'cp -r /var/www/homepage/.next/static /var/www/homepage/.next/standalone/.next/ 2>/dev/null || true'
+ExecStart=/usr/bin/node server.js
+```
+
+**Why this approach**:
+- `ExecStartPre` copies static files from build directory to standalone location before server starts
+- Happens on every service restart, so fresh builds automatically get static files
+- No symlinks (symlinks had circular reference issues)
+- No file permission issues
+- Simple, clean, reliable
+
+### Verification
+```
+✓ Homepage assets now fully accessible: HTTP 200
+✓ CSS/JavaScript loading correctly
+✓ Page renders with styling intact
+✓ All Next.js chunks loading without errors
+✓ Service restart copies fresh static files automatically
+```
+
+**Testing**:
+```bash
+curl https://homepage.itslit.me.uk/_next/static/chunks/8a783118-c270d7923c2b4ceb.js
+# Returns: HTTP 200 with JavaScript content
+
+curl https://homepage.itslit.me.uk/
+# Returns: HTTP 200 with fully rendered HTML (not just unstyled content)
+```
+
+### Ansible Persistence
+The fix was codified in the Ansible template `/home/marctowler/homelab/ansible/templates/services/homepage.service.j2` so it will automatically apply on future `homepage` playbook runs.
+
+---
+
+### Lessons Learned
+1. **DNS Before Code**: DNS resolution issues can completely mask actual routing problems
+2. **Infrastructure Assumptions**: Auto-registration features (DHCP FQDN) can conflict with service mesh/proxy architectures
+3. **TOML Syntax Flexibility**: Nested tables vs inline tables both valid - choose based on Traefik's actual expectations
+4. **Selective Automation**: Manual DNS overrides (game, prometheus) took precedence over auto-registration - important to understand precedence order
+5. **Revert and Verify**: Code rollback confirmed that the real issue was external (DNS), not internal (TOML)
+6. **Standalone Build Quirks**: Next.js standalone mode creates a self-contained executable with specific file structure expectations - deployment must match those expectations
+7. **Copy vs Symlink**: For containerized deployments, explicit copying is more reliable than symlinks which can create resolution issues
+
+### Recommendation
+Document in infrastructure wiki:
+- DHCP FQDN should be disabled when using centralized reverse proxy (Traefik)
+- Service discovery pattern: All service FQDNs → Traefik IP, Traefik routes internally
+- Consider automating OPNsense dnsmasq Host Overrides via REST API or SSH (attempted but pending completion)
 2. **Monitor systemd service**: Ensure service stays active on reboots
 3. **Test certificate provisioning**: ACME certificates pending initial request when external DNS resolves domain
 
