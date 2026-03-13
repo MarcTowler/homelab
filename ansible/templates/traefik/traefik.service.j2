@@ -6,14 +6,14 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=traefik
-Group=traefik
+User=root
+Group=root
 
 # Environment variables for ACME/Cloudflare
 Environment="CLOUDFLARE_DNS_API_TOKEN={{ cloudflare_dns_token }}"
 Environment="CLOUDFLARE_ZONE_API_TOKEN={{ cloudflare_dns_token }}"
 
-# Traefik executable
+# Traefik executable (run as root to bind to ports 80/443)
 ExecStart=/usr/local/bin/traefik --configFile=/etc/traefik/traefik.toml
 
 # Process management
