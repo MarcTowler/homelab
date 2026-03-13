@@ -149,6 +149,11 @@
         src: ../templates/services/homepage-services.yaml.j2
         dest: /var/www/homepage/config/services.yaml
 
+    - name: Deploy proxmox.yaml
+      template:
+        src: ../templates/services/proxmox.yaml.j2
+        dest: /var/www/homepage/config/proxmox.yaml
+
     - name: Setup GitHub Runners API Service
       block:
         - name: Install axios for GitHub Runners API

@@ -13,9 +13,9 @@ Environment="NODE_ENV=production"
 Environment="NEXTAUTH_URL=https://homepage.itslit.me.uk"
 Environment="NEXT_PUBLIC_URL=https://homepage.itslit.me.uk"
 
-# Ensure standalone server has access to static files
+# Ensure standalone server has access to static files and config
 # The Next.js standalone build expects static files at .next/standalone/.next/static
-ExecStartPre=/bin/sh -c 'rm -rf /var/www/homepage/.next/standalone/.next/static && cp -r /var/www/homepage/.next/static /var/www/homepage/.next/standalone/.next/'
+ExecStartPre=/bin/sh -c 'rm -rf /var/www/homepage/.next/standalone/.next/static && cp -r /var/www/homepage/.next/static /var/www/homepage/.next/standalone/.next/ && cp -r /var/www/homepage/config/* /var/www/homepage/.next/standalone/config/ 2>/dev/null || true'
 
 # Fix: Use standalone server for Next.js with standalone output configuration
 ExecStart=/usr/bin/node server.js

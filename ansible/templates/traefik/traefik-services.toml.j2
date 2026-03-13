@@ -30,6 +30,9 @@
   service = "{{ service_name }}-service"
   entryPoints = ["websecure"]
   middlewares = ["add-headers"]
+  {% if service_name == 'homepage' %}
+  stripPrefix = false
+  {% endif %}
   
   [http.routers.{{ service_name }}.tls]
     certResolver = "letsencrypt"
@@ -56,6 +59,17 @@
       X-Forwarded-Proto = "https"
       X-Forwarded-Host = "{{ domain_name }}"
       X-Forwarded-Port = "443"
+
+# Minecraft Server - TCP Routing (Raw TCP passthrough)
+[tcp.routers.minecraft-server]
+  rule = "HostSNI(`*`)"
+  service = "minecraft-backend"
+  entryPoints = ["minecraft"]
+
+[tcp.services.minecraft-backend]
+  [tcp.services.minecraft-backend.loadBalancer]
+    [[tcp.services.minecraft-backend.loadBalancer.servers]]
+      address = "{{ service_hosts['game-server'] }}:25565"
 
 # Traefik Dashboard & API (internal - no external exposure)
 [http.routers.traefik-dashboard]
