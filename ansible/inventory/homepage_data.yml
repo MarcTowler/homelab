@@ -12,7 +12,7 @@
     "node": "arcanine"
     "vmid": 1000
   "discord-bot":
-    "icon": "discord.png"
+    "icon": "mdi-container"
     "ip": "10.0.1.136"
     "name": "discord-bot"
     "node": "murkrow"
