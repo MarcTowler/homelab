@@ -138,7 +138,24 @@ containers = {
     }
     tags      = ["game-server", "ubuntu"]
     exporters = ["node"]
-  }/* ,
+  },
+  discord-bot = {
+    lxc_id       = 1008
+    cores        = 2
+    memory       = 2048
+    node         = "murkrow"
+    ip_address   = "dhcp"
+    image        = "ubuntu_2204"
+    features = {
+      nesting = true
+      keyctl  = true
+    }
+    unprivileged = false
+    tags         = ["discord-bot", "csharp", "ubuntu"]
+    exporters    = ["node"]
+  }
+  
+  /* ,
   github-runner = {
     lxc_id     = 1010
     cores      = 4

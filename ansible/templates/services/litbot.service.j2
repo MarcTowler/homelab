@@ -1,0 +1,18 @@
+[Unit]
+Description=LitBot Discord Bot CLI Application
+After=network.target
+
+[Service]
+Type=simple
+User={{ app_user }}
+Group={{ app_group }}
+WorkingDirectory={{ app_root }}/publish
+ExecStart={{ app_root }}/publish/LitBot
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=litbot
+
+[Install]
+WantedBy=multi-user.target

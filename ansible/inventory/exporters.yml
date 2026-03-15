@@ -10,6 +10,11 @@
     - "mysql"
     "hostname": "db"
     "ip": "10.0.1.196"
+  "discord-bot":
+    "exporters":
+    - "node"
+    "hostname": "discord-bot"
+    "ip": "10.0.1.136"
   "game-server":
     "exporters":
     - "node"

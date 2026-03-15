@@ -1,0 +1,14 @@
+litbot:
+  prefix: "!"
+  adapters:
+    console:
+      enabled: true
+    discord:
+      enabled: true
+      token: "{{ discord_bot_token }}"
+    twitch:
+      enabled: false
+      username: "{{ twitch_username | default('change-me') }}"
+      token: "{{ twitch_token | default('change-me') }}"
+      clientId: "{{ twitch_client_id | default('change-me') }}"
+      channel: "{{ twitch_channel | default('change-me') }}"

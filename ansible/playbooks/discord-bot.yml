@@ -1,0 +1,264 @@
+---
+# Discord Bot C# CLI Deployment Playbook
+- name: Install and Deploy Discord Bot CLI Application
+  hosts: discord-bot
+  gather_facts: yes
+  become: yes
+  
+  vars:
+    app_root: /opt/litbot
+    app_user: litbot
+    app_group: litbot
+    dotnet_version: "8.0"
+    github_repo: "git@github.com:MarcTowler/LitBot.git"
+    github_branch: "Dev"
+  
+  tasks:
+    - name: Load vault secrets
+      include_vars:
+        file: ../inventory/secrets.yml
+
+    # Install .NET SDK dependencies for Ubuntu 24.04
+    - name: Install required system dependencies
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+          - gpg
+          - ca-certificates
+          - apt-transport-https
+          - software-properties-common
+        state: present
+        update_cache: yes
+
+    # Add Microsoft's .NET package repository
+    - name: Download Microsoft GPG key
+      get_url:
+        url: https://packages.microsoft.com/keys/microsoft.asc
+        dest: /etc/apt/trusted.gpg.d/microsoft.asc
+        mode: '0644'
+
+    - name: Add Microsoft .NET repository
+      apt_repository:
+        repo: "deb [arch=amd64,arm64 signed-by=/etc/apt/trusted.gpg.d/microsoft.asc] https://packages.microsoft.com/ubuntu/24.04/prod noble main"
+        state: present
+        filename: microsoft-ubuntu-24.04-prod
+
+    # Install .NET SDK
+    - name: Install .NET SDK
+      apt:
+        name: dotnet-sdk-{{ dotnet_version }}
+        state: present
+        update_cache: yes
+
+    - name: Verify .NET installation
+      command: dotnet --version
+      register: dotnet_version_check
+      changed_when: false
+
+    - name: Display .NET version
+      debug:
+        msg: "Installed .NET version: {{ dotnet_version_check.stdout }}"
+
+    # Create application user and directory
+    - name: Create application user
+      user:
+        name: "{{ app_user }}"
+        shell: /bin/bash
+        home: "/home/{{ app_user }}"
+        createhome: yes
+        state: present
+
+    # SSH setup for GitHub authentication
+    - name: Ensure SSH directory exists
+      file:
+        path: /root/.ssh
+        state: directory
+        mode: '0700'
+
+    - name: Copy GitHub Deploy Key
+      copy:
+        src: "../files/litbot_deploy_key"
+        dest: "/root/.ssh/litbot_deploy_key"
+        mode: '0600'
+
+    - name: Configure SSH for GitHub
+      blockinfile:
+        path: /root/.ssh/config
+        create: yes
+        mode: '0600'
+        block: |
+          Host github.com
+            HostName github.com
+            User git
+            IdentityFile /root/.ssh/litbot_deploy_key
+            StrictHostKeyChecking accept-new
+
+    # Clean existing repository before cloning
+    - name: Remove existing app directory
+      file:
+        path: "{{ app_root }}"
+        state: absent
+
+    - name: Create parent directory for application
+      file:
+        path: "{{ app_root | dirname }}"
+        state: directory
+        mode: '0755'
+
+    # Clone and build the application
+    - name: Clone GitHub repository
+      git:
+        repo: "{{ github_repo }}"
+        dest: "{{ app_root }}"
+        version: "{{ github_branch }}"
+        force: yes
+        update: yes
+        accept_hostkey: yes
+        key_file: "/root/.ssh/litbot_deploy_key"
+      register: git_clone
+
+    - name: Change ownership of cloned repository
+      file:
+        path: "{{ app_root }}"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0755'
+        recurse: yes
+
+    # Restore and build .NET project
+    - name: Find the main project file
+      find:
+        paths: "{{ app_root }}"
+        file_type: file
+        patterns: "*.csproj"
+        recurse: yes
+      register: csproj_files
+      changed_when: false
+
+    - name: Set project file path
+      set_fact:
+        project_file: "{{ csproj_files.files[0].path }}"
+        project_dir: "{{ csproj_files.files[0].path | dirname }}"
+      when: csproj_files.matched > 0
+
+    # Create the Resource1.resx file from template
+    - name: Create Properties directory for resources
+      file:
+        path: "{{ project_dir }}/Properties"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0755'
+      when: csproj_files.matched > 0
+
+    - name: Generate Resource1.resx from template
+      template:
+        src: ../templates/services/Resource1.resx.j2
+        dest: "{{ project_dir }}/Properties/Resource1.resx"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0644'
+      vars:
+        discord_token: "{{ discord_bot_token | default('') }}"
+        gapi_url: "{{ gapi_url | default('') }}"
+      when: csproj_files.matched > 0
+
+    - name: Generate Resource1.cs from template
+      template:
+        src: ../templates/services/Resource1.cs.j2
+        dest: "{{ project_dir }}/Properties/Resource1.cs"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0644'
+      when: csproj_files.matched > 0
+
+    - name: Deploy _config.yml from template
+      template:
+        src: ../templates/services/_config.yml.j2
+        dest: "{{ app_root }}/_config.yml"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0644'
+      when: csproj_files.matched > 0
+
+    - name: Restore .NET dependencies
+      shell: "cd {{ app_root }} && dotnet restore -r linux-x64"
+      become_user: "{{ app_user }}"
+      changed_when: false
+      register: dotnet_restore
+
+    - name: Publish .NET release build as self-contained binary
+      shell: |
+        cd {{ app_root }}
+        dotnet publish "{{ project_file }}" -c Release -r linux-x64 --self-contained -p:PublishTrimmed=false -o publish
+      become_user: "{{ app_user }}"
+      register: dotnet_publish
+
+    - name: Check if publish output exists
+      stat:
+        path: "{{ app_root }}/publish"
+      register: publish_dir_stat
+
+    - name: Copy config file to publish directory
+      copy:
+        src: "{{ app_root }}/_config.yml"
+        dest: "{{ app_root }}/publish/_config.yml"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0644'
+        remote_src: yes
+      when: publish_dir_stat.stat.exists and publish_dir_stat.stat.isdir
+
+    # Create symlink in /usr/local/bin for easy access (direct to binary)
+    - name: Create symlink for CLI command
+      file:
+        src: "{{ app_root }}/publish/LitBot"
+        dest: /usr/local/bin/litbot
+        state: link
+        owner: root
+        group: root
+      when: publish_dir_stat.stat.exists and publish_dir_stat.stat.isdir
+
+    # Deploy systemd service file
+    - name: Deploy systemd service file
+      template:
+        src: ../templates/services/litbot.service.j2
+        dest: /etc/systemd/system/litbot.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable litbot service on boot
+      systemd:
+        name: litbot
+        enabled: yes
+
+    - name: Start litbot service
+      systemd:
+        name: litbot
+        state: started
+
+    # Clean up temporary SSH key
+    - name: Remove temporary GitHub Deploy Key
+      file:
+        path: "/root/.ssh/litbot_deploy_key"
+        state: absent
+
+    - name: Display deployment summary
+      debug:
+        msg:
+          - "Discord Bot CLI deployment completed successfully!"
+          - "Application root: {{ app_root }}"
+          - "Executable: /usr/local/bin/litbot"
+          - "Can be run with: litbot [args]"
+          - ""
+          - "Systemd Service: litbot"
+          - "Service enabled and started. Bot will restart on failure."
+          - "Manage with: systemctl status litbot, systemctl restart litbot, etc."
+          - "View logs: journalctl -u litbot -f"
