@@ -7,6 +7,9 @@ API_USER = {{ api_user }}
 API_KEY = {{ php_token}}
 NAME  = "ItsLittany | Streamer, Gamer and Tech Enthusiast"
 TITLE = "itslit.uk | Multiplayer Gaming and Live-streaming Professional"
+DEFAULT_CONTROLLER = "main"
+DEFAULT_ACTION = "index"
+API_BASE = "https://api.{{ domain_name }}/"
 {% endif %}
 
 [twitch]
@@ -20,7 +23,7 @@ SL_SECRET   = {{ sl_secret }}
 
 [database]
 
-DBHOST = "db.itslit.me.uk"
+DBHOST = "db.{{ domain_name }}"
 PORT   = 3306
 DBNAME = "marctowl_itslitapi"
 DBUSER = {{ dbuser }}

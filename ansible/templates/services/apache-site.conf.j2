@@ -1,0 +1,68 @@
+<VirtualHost *:80>
+    ServerName {{ inventory_hostname }}
+    ServerAlias *.{{ inventory_hostname | regex_replace('^[^\.]+\.', '') }}
+    
+    DocumentRoot {{ app_root }}/src
+    
+    # Logging
+    ErrorLog ${APACHE_LOG_DIR}/site_error.log
+    CustomLog ${APACHE_LOG_DIR}/site_access.log combined
+    
+    # Trust Traefik reverse proxy (internal network)
+    # This tells Apache to read X-Forwarded-* headers from Traefik
+    <IfModule mod_remoteip.c>
+        RemoteIPHeader X-Forwarded-For
+        RemoteIPTrustedProxy 127.0.0.1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+    </IfModule>
+    
+    # Make PHP aware of HTTPS from X-Forwarded-Proto header
+    <IfModule mod_setenvif.c>
+        SetEnvIf X-Forwarded-Proto "https" HTTPS=on
+        SetEnvIf X-Forwarded-Proto "https" SERVER_PORT=443
+    </IfModule>
+    
+    # Preserve original request headers from client
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-Proto "http"
+    RequestHeader set X-Forwarded-For "%{REMOTE_ADDR}s"
+    
+    # Security headers
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Main directory configuration
+    <Directory {{ app_root }}>
+        AllowOverride All
+        Require all granted
+        
+        # Enable mod_rewrite for URL rewriting
+        <IfModule mod_rewrite.c>
+            RewriteEngine On
+            
+            # Remove index.php from URL
+            RewriteCond %{REQUEST_FILENAME} !-f
+            RewriteCond %{REQUEST_FILENAME} !-d
+            RewriteRule ^ index.php [QSA,L]
+        </IfModule>
+    </Directory>
+    
+    # PHP handling with mod_php
+    <FilesMatch \.php$>
+        SetHandler application/x-httpd-php
+    </FilesMatch>
+    
+    # Deny access to hidden files
+    <FilesMatch "^\.|^#.*#|~$">
+        <IfModule mod_authz_core.c>
+            Require all denied
+        </IfModule>
+        <IfModule !mod_authz_core.c>
+            Order allow,deny
+            Deny from all
+        </IfModule>
+    </FilesMatch>
+    
+    # Disable directory listing
+    Options -Indexes
+</VirtualHost>

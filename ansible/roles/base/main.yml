@@ -26,7 +26,7 @@
   hosts: all
   gather_facts: yes
   tasks:
-    - name: Write the new ec2 instance host key to known hosts
+    - name: Write the new instance host key to known hosts
       shell: 
         cmd: "ssh-keyscan -H {{ inventory_hostname }} >> ~/.ssh/known_hosts"
       register: ssh_keyscan_result

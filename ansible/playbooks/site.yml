@@ -24,6 +24,9 @@
 - name: Configure GAPI server
   import_playbook: gapi.yml
 
+- name: Configure Site server
+  import_playbook: website.yml
+
 - name: Configure game server
   import_playbook: game-server.yml
 
