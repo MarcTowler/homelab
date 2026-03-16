@@ -194,7 +194,6 @@
           mysql_connectivity.query_result is not defined
       changed_when: false
 
-  tasks:
     - name: Display validation summary
       debug:
         msg: |
