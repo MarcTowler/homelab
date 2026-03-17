@@ -1,10 +1,10 @@
 [site]
-TOKEN = {{ php_token}}
-TEST_TOKEN = {{ php_test_token}}
-BASE_URL = "http://{{ ansible_hostname }}.{{ domain_name }}/"
-{% if ansible_hostname == "site" %}
-API_USER = {{ api_user }}
-API_KEY = {{ php_token}}
+TOKEN = "{{ php_token}}"
+TEST_TOKEN = "{{ php_test_token}}"
+BASE_URL = "https://{{ ansible_facts['hostname'] }}.{{ domain_name }}/"
+{% if ansible_facts["hostname"] == "site" %}
+API_USER = "{{ api_user }}"
+API_KEY = "{{ php_test_token}}"
 NAME  = "ItsLittany | Streamer, Gamer and Tech Enthusiast"
 TITLE = "itslit.uk | Multiplayer Gaming and Live-streaming Professional"
 DEFAULT_CONTROLLER = "main"
