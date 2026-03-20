@@ -8,7 +8,7 @@ litbot:
       token: "{{ discord_bot_token }}"
     twitch:
       enabled: false
-      username: "{{ twitch_username | default('change-me') }}"
-      token: "{{ twitch_token | default('change-me') }}"
-      clientId: "{{ twitch_client_id | default('change-me') }}"
-      channel: "{{ twitch_channel | default('change-me') }}"
+      username: "{{ bot_twitch_username | default('change-me') }}"
+      token: "{{ bot_twitch_token | default('change-me') }}"
+      clientId: "{{ bot_twitch_client_id | default('change-me') }}"
+      channel: "{{ bot_twitch_channel | default('change-me') }}"
