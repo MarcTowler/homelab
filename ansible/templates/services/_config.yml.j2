@@ -1,5 +1,14 @@
 litbot:
   prefix: "!"
+  rewards:
+    chatChancePercent: 5
+    chatPointsAmount: 10
+    subscriptionTier1Points: 500
+    subscriptionTier2Points: 1000
+    subscriptionTier3Points: 2500
+    giftedSubPoints: 250
+    pointsPerBit: 1
+    watchStreakPoints: 100
   adapters:
     console:
       enabled: true
@@ -7,7 +16,7 @@ litbot:
       enabled: true
       token: "{{ discord_bot_token }}"
     twitch:
-      enabled: false
+      enabled: true
       username: "{{ bot_twitch_username | default('change-me') }}"
       token: "{{ bot_twitch_token | default('change-me') }}"
       clientId: "{{ bot_twitch_client_id | default('change-me') }}"
