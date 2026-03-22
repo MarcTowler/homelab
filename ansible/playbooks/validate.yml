@@ -273,15 +273,12 @@
       until: bazarr_check is succeeded
       changed_when: false
 
-    - name: Validate Readarr is healthy
       uri:
         url: "http://localhost:8787/api/v1/system/status"
         status_code: 200
         timeout: 10
-      register: readarr_check
       retries: 3
       delay: 5
-      until: readarr_check is succeeded
       changed_when: false
 
     - name: Validate qBittorrent is healthy
@@ -318,7 +315,6 @@
           ✓ Lidarr (Music)        - HEALTHY (http://localhost:8686)
           ✓ Prowlarr (Indexers)   - HEALTHY (http://localhost:9696)
           ✓ Bazarr (Subtitles)    - HEALTHY (http://localhost:6767)
-          ✓ Readarr (Books)       - HEALTHY (http://localhost:8787)
           ✓ qBittorrent (Torrents)- HEALTHY (http://localhost:8080)
           ✓ Node Exporter         - HEALTHY (http://localhost:9100/metrics)
           
@@ -328,9 +324,7 @@
           - https://lidarr.itslit.me.uk
           - https://prowlarr.itslit.me.uk
           - https://bazarr.itslit.me.uk
-          - https://readarr.itslit.me.uk
           - https://qbittorrent.itslit.me.uk
-          - https://flarearr.itslit.me.uk
           
           Configuration locations: /config/*
           Media storage: /media
@@ -343,6 +337,5 @@
         - lidarr_check is succeeded
         - prowlarr_check is succeeded
         - bazarr_check is succeeded
-        - readarr_check is succeeded
         - qbit_check is succeeded
         - exporter_check is succeeded

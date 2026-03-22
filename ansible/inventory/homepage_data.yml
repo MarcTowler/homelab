@@ -35,6 +35,12 @@
     "name": "homepage"
     "node": "arcanine"
     "vmid": 1004
+  "media-arr":
+    "icon": "mdi-container"
+    "ip": "10.0.1.206"
+    "name": "media-arr"
+    "node": "arcanine"
+    "vmid": 1009
   "monitoring":
     "icon": "grafana.png"
     "ip": "10.0.1.87"

@@ -12,14 +12,15 @@
   'monitoring_prometheus': '10.0.1.87',
   'monitoring_grafana': '10.0.1.87',
   'game-server': '10.0.1.48',
-  'sonarr': '10.0.1.201',
-  'radarr': '10.0.1.201',
-  'lidarr': '10.0.1.201',
-  'prowlarr': '10.0.1.201',
-  'bazarr': '10.0.1.201',
-  'readarr': '10.0.1.201',
-  'qbittorrent': '10.0.1.201',
-  'flarearr': '10.0.1.201'
+  'sonarr': media_arr_ip,
+  'radarr': media_arr_ip,
+  'lidarr': media_arr_ip,
+  'prowlarr': media_arr_ip,
+  'bazarr': media_arr_ip,
+  'readarr': media_arr_ip,
+  'qbittorrent': media_arr_ip,
+  'flaresolverr': media_arr_ip,
+  'jellyfin': media_arr_ip
 } %}
 
 # Generate routers and services for each mapped service
@@ -37,15 +38,12 @@
   rule = "Host(`{{ service_subdomains[service_name] }}.{{ domain_name }}`)"
   service = "{{ service_name }}-service"
   entryPoints = ["websecure"]
-  {% if service_name in ['sonarr', 'radarr', 'lidarr', 'prowlarr', 'bazarr', 'readarr', 'qbittorrent', 'flarearr'] %}
+  {% if service_name in ['sonarr', 'radarr', 'lidarr', 'prowlarr', 'bazarr', 'readarr', 'qbittorrent'] -%}
   middlewares = ["add-headers", "media-arr-auth"]
-  {% else %}
+  {% else -%}
   middlewares = ["add-headers"]
-  {% endif %}
-  {% if service_name == 'homepage' %}
-  stripPrefix = false
-  {% endif %}
-  
+  {% endif -%}
+
   [http.routers.{{ service_name }}.tls]
     certResolver = "letsencrypt"
     [[http.routers.{{ service_name }}.tls.domains]]
@@ -75,7 +73,7 @@
   # Basic Auth for media-arr services
   [http.middlewares.media-arr-auth.basicAuth]
     users = [
-      "{{ media_arr_auth_user }}:{{ media_arr_auth_password }}"
+      "{{ media_arr_auth_credentials }}"
     ]
     removeHeader = true
 

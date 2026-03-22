@@ -8,9 +8,9 @@ service_port_mapping:
   lidarr: 8686
   prowlarr: 9696
   bazarr: 6767
-  readarr: 8787
   qbittorrent: 8080
-  flarearr: 8182
+  flaresolverr: 8191
+  jellyfin: 8096
 
 # Service subdomains for DNS/Traefik
 service_subdomains:
@@ -19,9 +19,9 @@ service_subdomains:
   lidarr: "lidarr"
   prowlarr: "prowlarr"
   bazarr: "bazarr"
-  readarr: "readarr"
   qbittorrent: "qbittorrent"
-  flarearr: "flarearr"
+  flaresolverr: "flaresolverr"
+  jellyfin: "jellyfin"
 
 # Domain name (inherited from group_vars/all.yml)
 domain_name: "itslit.me.uk"
@@ -42,9 +42,9 @@ service_descriptions:
   lidarr: "Music Library Management"
   prowlarr: "Indexer Management & Discovery"
   bazarr: "Subtitle Management & Download"
-  readarr: "Book Library Management"
   qbittorrent: "Torrent Client & Download Manager"
-  flarearr: "CDN Optimization & Metadata Enhancement"
+  flaresolverr: "CAPTCHA/CloudFlare Bypass Solver"
+  jellyfin: "Media Server & Content Streaming"
 
 # Traefik integration settings
 traefik_enabled: true

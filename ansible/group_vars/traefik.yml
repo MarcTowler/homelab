@@ -10,6 +10,14 @@ service_port_mapping:
   monitoring_prometheus: 9090
   monitoring_grafana: 3000
   game-server: 8080
+  sonarr: 8989
+  radarr: 7878
+  lidarr: 8686
+  prowlarr: 9696
+  bazarr: 6767
+  qbittorrent: 8080
+  flaresolverr: 8191
+  jellyfin: 8096
 
 # Domain name (inherited from all.yml or set explicitly)
 domain_name: "itslit.me.uk"
@@ -24,6 +32,14 @@ service_subdomains:
   monitoring_prometheus: "prometheus"
   monitoring_grafana: "grafana"
   game-server: "game"
+  sonarr: "sonarr"
+  radarr: "radarr"
+  lidarr: "lidarr"
+  prowlarr: "prowlarr"
+  bazarr: "bazarr"
+  qbittorrent: "qbittorrent"
+  flaresolverr: "flaresolverr"
+  jellyfin: "jellyfin"
 
 # Traefik API configuration
 traefik_api_port: 8080

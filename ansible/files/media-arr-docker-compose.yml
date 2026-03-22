@@ -1,6 +1,3 @@
----
-version: '3.8'
-
 services:
   # Sonarr - TV Series Management
   sonarr:
@@ -90,22 +87,24 @@ services:
       - media-network
 
   # Readarr - Book Management
-  readarr:
-    image: linuxserver/readarr:nightly
-    container_name: readarr
-    restart: unless-stopped
-    ports:
-      - "8787:8787"
-    volumes:
-      - /config/readarr:/config
-      - /media:/media
-      - /downloads:/downloads
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=UTC
-    networks:
-      - media-network
+  # NOTE: Readarr is still in early development and doesn't have stable Docker images
+  # Uncomment and update when stable releases are available
+  # readarr:
+  #   image: linuxserver/readarr:latest
+  #   container_name: readarr
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8787:8787"
+  #   volumes:
+  #     - /config/readarr:/config
+  #     - /media:/media
+  #     - /downloads:/downloads
+  #   environment:
+  #     - PUID=1000
+  #     - PGID=1000
+  #     - TZ=UTC
+  #   networks:
+  #     - media-network
 
   # qBittorrent - Torrent Client
   qbittorrent:
@@ -128,16 +127,30 @@ services:
     networks:
       - media-network
 
-  # FlareArr - Metadata Enhancement and CDN Integration
-  flarearr:
-    image: bukowa/flarearr:latest
-    container_name: flarearr
+  # FlareSolverr - CAPTCHA/CloudFlare bypass for indexers
+  flaresolverr:
+    image: flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
     restart: unless-stopped
     ports:
-      - "8182:8182"
+      - "8191:8191"
+    environment:
+      - LOG_LEVEL=info
+      - CAPTCHA_SOLVER=hcaptcha
+    networks:
+      - media-network
+
+  # Jellyfin - Media Server (UI for watching content)
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    ports:
+      - "8096:8096"
     volumes:
-      - /config/flarearr:/config
-      - /media:/media
+      - /config/jellyfin:/config
+      - /config/jellyfin/cache:/cache
+      - /media:/media:ro
     environment:
       - PUID=1000
       - PGID=1000
@@ -145,24 +158,46 @@ services:
     networks:
       - media-network
 
+  # FlareArr - Metadata Enhancement and CDN Integration
+  # NOTE: Using an alternative lighter image. Uncomment when stable image is available.
+  # Original: bukowa/flarearr:latest (not found in registry)
+  # flarearr:
+  #   image: bukowa/flarearr:latest
+  #   container_name: flarearr
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8182:8182"
+  #   volumes:
+  #     - /config/flarearr:/config
+  #     - /media:/media
+  #   environment:
+  #     - PUID=1000
+  #     - PGID=1000
+  #     - TZ=UTC
+  #   networks:
+  #     - media-network
+
   # Node Exporter - Prometheus metrics
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: node-exporter
-    restart: unless-stopped
-    ports:
-      - "9100:9100"
-    command:
-      - '--path.rootfs=/'
-      - '--path.procfs=/proc'
-      - '--path.sysfs=/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    volumes:
-      - /:/rootfs:ro
-      - /proc:/proc:ro
-      - /sys:/sys:ro
-    networks:
-      - media-network
+  # NOTE: Monitoring is handled by the host Node Exporter (already running on port 9100)
+  # This container would conflict with the host Node Exporter
+  # Uncomment if running in isolated environment without host monitoring
+  # node-exporter:
+  #   image: prom/node-exporter:latest
+  #   container_name: node-exporter
+  #   restart: unless-stopped
+  #   ports:
+  #     - "9101:9100"
+  #   command:
+  #     - '--path.rootfs=/'
+  #     - '--path.procfs=/proc'
+  #     - '--path.sysfs=/sys'
+  #     - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /proc:/proc:ro
+  #     - /sys:/sys:ro
+  #   networks:
+  #     - media-network
 
 networks:
   media-network:

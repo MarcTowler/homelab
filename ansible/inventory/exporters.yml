@@ -30,6 +30,11 @@
     - "node"
     "hostname": "homepage"
     "ip": "10.0.1.178"
+  "media-arr":
+    "exporters":
+    - "node"
+    "hostname": "media-arr"
+    "ip": "10.0.1.206"
   "monitoring":
     "exporters":
     - "node"

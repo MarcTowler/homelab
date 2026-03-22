@@ -1,6 +1,6 @@
 ---
 # Media Array (*arr Stack) Deployment
-- name: Deploy media-arr stack (Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Readarr, qBittorrent, FlareArr)
+- name: Deploy media-arr stack (Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Readarr, qBittorrent)
   hosts: media-arr
   gather_facts: yes
   become: yes
@@ -86,9 +86,10 @@
         - "{{ config_base }}/lidarr"
         - "{{ config_base }}/prowlarr"
         - "{{ config_base }}/bazarr"
-        - "{{ config_base }}/readarr"
         - "{{ config_base }}/qbittorrent"
-        - "{{ config_base }}/flarearr"
+        - "{{ config_base }}/flaresolverr"
+        - "{{ config_base }}/jellyfin"
+        - "{{ config_base }}/jellyfin/cache"
 
     - name: Create downloads directory
       file:
@@ -133,99 +134,67 @@
       pause:
         seconds: 15
 
-    # Health checks
+    # Health checks (using endpoints that don't require API key)
     - name: Verify Sonarr is running
-      uri:
-        url: "http://localhost:8989/api/v3/system/status"
-        method: GET
-        status_code: 200
-        timeout: 10
+      shell: curl -s -o /dev/null -w "%{http_code}" "http://localhost:8989/login"
       register: sonarr_check
-      until: sonarr_check is succeeded
+      until: sonarr_check.stdout == "200"
       retries: 5
       delay: 5
       changed_when: false
 
     - name: Verify Radarr is running
-      uri:
-        url: "http://localhost:7878/api/v3/system/status"
-        method: GET
-        status_code: 200
-        timeout: 10
+      shell: curl -s -o /dev/null -w "%{http_code}" "http://localhost:7878/login"
       register: radarr_check
-      until: radarr_check is succeeded
+      until: radarr_check.stdout == "200"
       retries: 5
       delay: 5
       changed_when: false
 
     - name: Verify Prowlarr is running
-      uri:
-        url: "http://localhost:9696/api/v1/health"
-        method: GET
-        status_code: 200
-        timeout: 10
+      shell: curl -s -o /dev/null -w "%{http_code}" "http://localhost:9696/login"
       register: prowlarr_check
-      until: prowlarr_check is succeeded
+      until: prowlarr_check.stdout == "200"
       retries: 5
       delay: 5
       changed_when: false
 
     - name: Verify Lidarr is running
-      uri:
-        url: "http://localhost:8686/api/v1/system/status"
-        method: GET
-        status_code: 200
-        timeout: 10
+      shell: curl -s -o /dev/null -w "%{http_code}" "http://localhost:8686/login"
       register: lidarr_check
-      until: lidarr_check is succeeded
+      until: lidarr_check.stdout == "200"
       retries: 5
       delay: 5
       changed_when: false
 
     - name: Verify Bazarr is running
-      uri:
-        url: "http://localhost:6767/api/system/status"
-        method: GET
-        status_code: 200
-        timeout: 10
+      shell: "curl -s -o /dev/null -w '%{http_code}' 'http://localhost:6767/login' | grep -E '^(200|302)$'"
       register: bazarr_check
       until: bazarr_check is succeeded
       retries: 5
       delay: 5
       changed_when: false
 
-    - name: Verify Readarr is running
-      uri:
-        url: "http://localhost:8787/api/v1/system/status"
-        method: GET
-        status_code: 200
-        timeout: 10
-      register: readarr_check
-      until: readarr_check is succeeded
-      retries: 5
-      delay: 5
-      changed_when: false
-
     - name: Verify qBittorrent is running
-      uri:
-        url: "http://localhost:8080/api/v2/app/webapiVersion"
-        method: GET
-        status_code: 200
-        timeout: 10
+      shell: curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080"
       register: qbit_check
-      until: qbit_check is succeeded
+      until: qbit_check.stdout == "200"
       retries: 5
       delay: 5
       changed_when: false
 
-    - name: Verify Node Exporter is running
-      uri:
-        url: "http://localhost:9100/metrics"
-        method: GET
-        status_code: 200
-        timeout: 10
-      register: exporter_check
-      until: exporter_check is succeeded
+    - name: Verify FlareSolverr is running
+      shell: curl -s -o /dev/null -w "%{http_code}" "http://localhost:8191/"
+      register: flaresolverr_check
+      until: flaresolverr_check.stdout == "200"
+      retries: 5
+      delay: 5
+      changed_when: false
+
+    - name: Verify Jellyfin is running
+      shell: curl -s -o /dev/null -w "%{http_code}" "http://localhost:8096/System/Info"
+      register: jellyfin_check
+      until: jellyfin_check.stdout == "200"
       retries: 5
       delay: 5
       changed_when: false
@@ -242,10 +211,11 @@
           ✓ Lidarr (Music)       - http://localhost:8686
           ✓ Prowlarr (Indexers)  - http://localhost:9696
           ✓ Bazarr (Subtitles)   - http://localhost:6767
-          ✓ Readarr (Books)      - http://localhost:8787
           ✓ qBittorrent (Torrent)- http://localhost:8080
-          ✓ FlareArr (CDN/Meta)  - http://localhost:8182
-          ✓ Node Exporter        - http://localhost:9100/metrics
+          ✓ FlareSolverr (CAPTCHA) - http://localhost:8191
+          ✓ Jellyfin (Media Server) - http://localhost:8096
+          
+          Monitoring: Host Node Exporter (port 9100)
           
           Configuration paths:
           - /config/sonarr
@@ -253,9 +223,9 @@
           - /config/lidarr
           - /config/prowlarr
           - /config/bazarr
-          - /config/readarr
           - /config/qbittorrent
-          - /config/flarearr
+          - /config/flaresolverr
+          - /config/jellyfin
           
           Media storage: {{ media_path }}
           Downloads: {{ downloads_path }}

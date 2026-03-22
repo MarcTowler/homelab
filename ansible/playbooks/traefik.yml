@@ -33,9 +33,9 @@
       lidarr: 8686
       prowlarr: 9696
       bazarr: 6767
-      readarr: 8787
       qbittorrent: 8080
-      flarearr: 8182
+      flaresolverr: 8191
+      jellyfin: 8096
     
     # Service subdomains
     service_subdomains:
@@ -52,9 +52,9 @@
       lidarr: "lidarr"
       prowlarr: "prowlarr"
       bazarr: "bazarr"
-      readarr: "readarr"
       qbittorrent: "qbittorrent"
-      flarearr: "flarearr"
+      flaresolverr: "flaresolverr"
+      jellyfin: "jellyfin"
 
   tasks:
     # Load vault secrets for Cloudflare and other credentials
@@ -62,12 +62,32 @@
       include_vars:
         file: ../inventory/secrets.yml
 
-    # Generate or load media-arr basic auth credentials
-    - name: Generate media-arr basic auth credentials
+    # Get media-arr container IP from inventory for Traefik routing
+    - name: Get media-arr container IP
       set_fact:
-        media_arr_auth_user: "{{ media_arr_auth_user | default('media-user') }}"
-        media_arr_auth_password: "{{ media_arr_auth_password | default(lookup('password', '/dev/null length=16 chars=ascii_letters,digits')) }}"
-      when: media_arr_auth_user is not defined or media_arr_auth_password is not defined
+        media_arr_ip: "{{ hostvars['media-arr']['ansible_host'] }}"
+
+    # Load media-arr basic auth credentials from vault
+    - name: Set media-arr auth credentials from vault
+      set_fact:
+        media_arr_auth_user: "{{ media_arr_auth_user }}"
+        media_arr_auth_password: "{{ media_arr_auth_password }}"
+
+    # Hash password for Traefik basic auth using APR MD5
+    - name: Generate APR MD5 hash for Traefik basic auth
+      shell: |
+        python3 -c "
+        import crypt
+        password = '{{ media_arr_auth_password }}'
+        hash_result = crypt.crypt(password, crypt.METHOD_MD5)
+        print(hash_result)
+        "
+      register: password_hash_result
+      changed_when: false
+
+    - name: Create Traefik auth credentials in correct format
+      set_fact:
+        media_arr_auth_credentials: "{{ media_arr_auth_user }}:{{ password_hash_result.stdout }}"
 
     - name: Display media-arr auth credentials
       debug:
