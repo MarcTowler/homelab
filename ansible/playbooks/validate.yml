@@ -211,3 +211,138 @@
             ansible-playbook playbooks/validate.yml --limit=<hostname>
           ═══════════════════════════════════════════════════════════════
       changed_when: false
+
+- name: Validate Media-arr Stack Health
+  hosts: media-arr
+  gather_facts: yes
+  become: no
+
+  tasks:
+    - name: Validate Sonarr is healthy
+      uri:
+        url: "http://localhost:8989/api/v3/system/status"
+        status_code: 200
+        timeout: 10
+      register: sonarr_check
+      retries: 3
+      delay: 5
+      until: sonarr_check is succeeded
+      changed_when: false
+
+    - name: Validate Radarr is healthy
+      uri:
+        url: "http://localhost:7878/api/v3/system/status"
+        status_code: 200
+        timeout: 10
+      register: radarr_check
+      retries: 3
+      delay: 5
+      until: radarr_check is succeeded
+      changed_when: false
+
+    - name: Validate Lidarr is healthy
+      uri:
+        url: "http://localhost:8686/api/v1/system/status"
+        status_code: 200
+        timeout: 10
+      register: lidarr_check
+      retries: 3
+      delay: 5
+      until: lidarr_check is succeeded
+      changed_when: false
+
+    - name: Validate Prowlarr is healthy
+      uri:
+        url: "http://localhost:9696/api/v1/health"
+        status_code: 200
+        timeout: 10
+      register: prowlarr_check
+      retries: 3
+      delay: 5
+      until: prowlarr_check is succeeded
+      changed_when: false
+
+    - name: Validate Bazarr is healthy
+      uri:
+        url: "http://localhost:6767/api/system/status"
+        status_code: 200
+        timeout: 10
+      register: bazarr_check
+      retries: 3
+      delay: 5
+      until: bazarr_check is succeeded
+      changed_when: false
+
+    - name: Validate Readarr is healthy
+      uri:
+        url: "http://localhost:8787/api/v1/system/status"
+        status_code: 200
+        timeout: 10
+      register: readarr_check
+      retries: 3
+      delay: 5
+      until: readarr_check is succeeded
+      changed_when: false
+
+    - name: Validate qBittorrent is healthy
+      uri:
+        url: "http://localhost:8080/api/v2/app/webapiVersion"
+        status_code: 200
+        timeout: 10
+      register: qbit_check
+      retries: 3
+      delay: 5
+      until: qbit_check is succeeded
+      changed_when: false
+
+    - name: Validate Node Exporter metrics
+      uri:
+        url: "http://localhost:9100/metrics"
+        status_code: 200
+        timeout: 10
+      register: exporter_check
+      retries: 3
+      delay: 5
+      until: exporter_check is succeeded
+      changed_when: false
+
+    - name: Display Media-arr Stack validation summary
+      debug:
+        msg: |
+          ═══════════════════════════════════════════════════════════════
+          MEDIA-ARR STACK VALIDATION COMPLETE
+          ═══════════════════════════════════════════════════════════════
+          
+          ✓ Sonarr (TV)           - HEALTHY (http://localhost:8989)
+          ✓ Radarr (Movies)       - HEALTHY (http://localhost:7878)
+          ✓ Lidarr (Music)        - HEALTHY (http://localhost:8686)
+          ✓ Prowlarr (Indexers)   - HEALTHY (http://localhost:9696)
+          ✓ Bazarr (Subtitles)    - HEALTHY (http://localhost:6767)
+          ✓ Readarr (Books)       - HEALTHY (http://localhost:8787)
+          ✓ qBittorrent (Torrents)- HEALTHY (http://localhost:8080)
+          ✓ Node Exporter         - HEALTHY (http://localhost:9100/metrics)
+          
+          Access via Traefik (with authentication):
+          - https://sonarr.itslit.me.uk
+          - https://radarr.itslit.me.uk
+          - https://lidarr.itslit.me.uk
+          - https://prowlarr.itslit.me.uk
+          - https://bazarr.itslit.me.uk
+          - https://readarr.itslit.me.uk
+          - https://qbittorrent.itslit.me.uk
+          - https://flarearr.itslit.me.uk
+          
+          Configuration locations: /config/*
+          Media storage: /media
+          Downloads: /downloads
+          ═══════════════════════════════════════════════════════════════
+      changed_when: false
+      when:
+        - sonarr_check is succeeded
+        - radarr_check is succeeded
+        - lidarr_check is succeeded
+        - prowlarr_check is succeeded
+        - bazarr_check is succeeded
+        - readarr_check is succeeded
+        - qbit_check is succeeded
+        - exporter_check is succeeded

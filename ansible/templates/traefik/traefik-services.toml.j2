@@ -11,7 +11,15 @@
   'monitoring': '10.0.1.87',
   'monitoring_prometheus': '10.0.1.87',
   'monitoring_grafana': '10.0.1.87',
-  'game-server': '10.0.1.48'
+  'game-server': '10.0.1.48',
+  'sonarr': '10.0.1.201',
+  'radarr': '10.0.1.201',
+  'lidarr': '10.0.1.201',
+  'prowlarr': '10.0.1.201',
+  'bazarr': '10.0.1.201',
+  'readarr': '10.0.1.201',
+  'qbittorrent': '10.0.1.201',
+  'flarearr': '10.0.1.201'
 } %}
 
 # Generate routers and services for each mapped service
@@ -29,7 +37,11 @@
   rule = "Host(`{{ service_subdomains[service_name] }}.{{ domain_name }}`)"
   service = "{{ service_name }}-service"
   entryPoints = ["websecure"]
+  {% if service_name in ['sonarr', 'radarr', 'lidarr', 'prowlarr', 'bazarr', 'readarr', 'qbittorrent', 'flarearr'] %}
+  middlewares = ["add-headers", "media-arr-auth"]
+  {% else %}
   middlewares = ["add-headers"]
+  {% endif %}
   {% if service_name == 'homepage' %}
   stripPrefix = false
   {% endif %}
@@ -59,6 +71,13 @@
       X-Forwarded-Proto = "https"
       X-Forwarded-Host = "{{ domain_name }}"
       X-Forwarded-Port = "443"
+
+  # Basic Auth for media-arr services
+  [http.middlewares.media-arr-auth.basicAuth]
+    users = [
+      "{{ media_arr_auth_user }}:{{ media_arr_auth_password }}"
+    ]
+    removeHeader = true
 
 # Minecraft Server - TCP Routing (Raw TCP passthrough)
 [tcp.routers.minecraft-server]

@@ -44,6 +44,15 @@ resource "local_file" "ansible_inventory" {
             } if can(regex("traefik", name))
           }
         }
+        media-arr = {
+          hosts = {
+            for name, cfg in var.containers :
+            name => {
+              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_user = "root"
+            } if can(regex("media-arr", name))
+          }
+        }
         proxmox_nodes = {
           hosts = {
             for name, cfg in var.nodes :
@@ -95,7 +104,7 @@ resource "local_file" "ansible_inventory" {
             name => {
               ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
               ansible_user = "root"
-            } if !can(regex("(db|api|monitoring)", name))
+            } if !can(regex("(db|api|monitoring|media-arr)", name))
           }
         }
       }

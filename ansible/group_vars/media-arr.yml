@@ -1,0 +1,62 @@
+---
+# Media-arr group variables - all *arr services port mappings and configuration
+
+# Service port mapping for Traefik routing
+service_port_mapping:
+  sonarr: 8989
+  radarr: 7878
+  lidarr: 8686
+  prowlarr: 9696
+  bazarr: 6767
+  readarr: 8787
+  qbittorrent: 8080
+  flarearr: 8182
+
+# Service subdomains for DNS/Traefik
+service_subdomains:
+  sonarr: "sonarr"
+  radarr: "radarr"
+  lidarr: "lidarr"
+  prowlarr: "prowlarr"
+  bazarr: "bazarr"
+  readarr: "readarr"
+  qbittorrent: "qbittorrent"
+  flarearr: "flarearr"
+
+# Domain name (inherited from group_vars/all.yml)
+domain_name: "itslit.me.uk"
+
+# Media paths configuration
+media_paths:
+  media: "/media"
+  downloads: "/downloads"
+  config_base: "/config"
+
+# Node Exporter monitoring
+node_exporter_port: 9100
+
+# Service descriptions for documentation
+service_descriptions:
+  sonarr: "TV Series Management & Automation"
+  radarr: "Movie Management & Automation"
+  lidarr: "Music Library Management"
+  prowlarr: "Indexer Management & Discovery"
+  bazarr: "Subtitle Management & Download"
+  readarr: "Book Library Management"
+  qbittorrent: "Torrent Client & Download Manager"
+  flarearr: "CDN Optimization & Metadata Enhancement"
+
+# Traefik integration settings
+traefik_enabled: true
+traefik_basic_auth_enabled: true
+traefik_domain: "{{ domain_name }}"
+traefik_https_enabled: true
+
+# Default credentials for initial setup (should be changed post-deployment)
+# These are stored in vault in production
+qbittorrent_default_user: "admin"
+qbittorrent_default_password: "adminPassword"  # Should be from vault
+
+# Resource monitoring
+enable_prometheus_monitoring: true
+prometheus_scrape_interval: 30s

@@ -1,0 +1,261 @@
+---
+# Media Array (*arr Stack) Deployment
+- name: Deploy media-arr stack (Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Readarr, qBittorrent, FlareArr)
+  hosts: media-arr
+  gather_facts: yes
+  become: yes
+
+  vars:
+    media_arr_home: "/var/lib/media-arr"
+    config_base: "/config"
+    downloads_path: "/downloads"
+    media_path: "/media"
+
+  tasks:
+    # System preparation
+    - name: Update package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install Docker prerequisites
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - software-properties-common
+          - git
+        state: present
+
+    # Docker installation
+    - name: Add Docker GPG key
+      apt_key:
+        url: "https://download.docker.com/linux/ubuntu/gpg"
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker-ce
+
+    - name: Install Docker and Docker Compose
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+
+    - name: Enable Docker service
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: Create media-arr user group
+      group:
+        name: media-arr
+        state: present
+
+    - name: Create media-arr user
+      user:
+        name: media-arr
+        group: media-arr
+        home: "{{ media_arr_home }}"
+        shell: /bin/bash
+        createhome: yes
+        state: present
+
+    # Directory structure
+    - name: Create config directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: media-arr
+        group: media-arr
+        mode: '0755'
+      loop:
+        - "{{ config_base }}"
+        - "{{ config_base }}/sonarr"
+        - "{{ config_base }}/radarr"
+        - "{{ config_base }}/lidarr"
+        - "{{ config_base }}/prowlarr"
+        - "{{ config_base }}/bazarr"
+        - "{{ config_base }}/readarr"
+        - "{{ config_base }}/qbittorrent"
+        - "{{ config_base }}/flarearr"
+
+    - name: Create downloads directory
+      file:
+        path: "{{ downloads_path }}"
+        state: directory
+        owner: media-arr
+        group: media-arr
+        mode: '0755'
+
+    - name: Verify media directory exists and is accessible
+      stat:
+        path: "{{ media_path }}"
+      register: media_stat
+
+    - name: Set permissions on media directory
+      file:
+        path: "{{ media_path }}"
+        owner: media-arr
+        group: media-arr
+        mode: '0755'
+        state: directory
+      when: media_stat.stat.exists
+
+    # Deploy Docker Compose configuration
+    - name: Deploy docker-compose.yml
+      copy:
+        src: ../files/media-arr-docker-compose.yml
+        dest: "{{ media_arr_home }}/docker-compose.yml"
+        owner: media-arr
+        group: media-arr
+        mode: '0644'
+
+    # Start services
+    - name: Start media-arr services
+      shell: |
+        cd {{ media_arr_home }}
+        docker compose up -d
+      environment:
+        COMPOSE_PROJECT_NAME: "media-arr"
+
+    - name: Wait for services to stabilize
+      pause:
+        seconds: 15
+
+    # Health checks
+    - name: Verify Sonarr is running
+      uri:
+        url: "http://localhost:8989/api/v3/system/status"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: sonarr_check
+      until: sonarr_check is succeeded
+      retries: 5
+      delay: 5
+      changed_when: false
+
+    - name: Verify Radarr is running
+      uri:
+        url: "http://localhost:7878/api/v3/system/status"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: radarr_check
+      until: radarr_check is succeeded
+      retries: 5
+      delay: 5
+      changed_when: false
+
+    - name: Verify Prowlarr is running
+      uri:
+        url: "http://localhost:9696/api/v1/health"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: prowlarr_check
+      until: prowlarr_check is succeeded
+      retries: 5
+      delay: 5
+      changed_when: false
+
+    - name: Verify Lidarr is running
+      uri:
+        url: "http://localhost:8686/api/v1/system/status"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: lidarr_check
+      until: lidarr_check is succeeded
+      retries: 5
+      delay: 5
+      changed_when: false
+
+    - name: Verify Bazarr is running
+      uri:
+        url: "http://localhost:6767/api/system/status"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: bazarr_check
+      until: bazarr_check is succeeded
+      retries: 5
+      delay: 5
+      changed_when: false
+
+    - name: Verify Readarr is running
+      uri:
+        url: "http://localhost:8787/api/v1/system/status"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: readarr_check
+      until: readarr_check is succeeded
+      retries: 5
+      delay: 5
+      changed_when: false
+
+    - name: Verify qBittorrent is running
+      uri:
+        url: "http://localhost:8080/api/v2/app/webapiVersion"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: qbit_check
+      until: qbit_check is succeeded
+      retries: 5
+      delay: 5
+      changed_when: false
+
+    - name: Verify Node Exporter is running
+      uri:
+        url: "http://localhost:9100/metrics"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: exporter_check
+      until: exporter_check is succeeded
+      retries: 5
+      delay: 5
+      changed_when: false
+
+    # Display service information
+    - name: Display media-arr stack deployment summary
+      debug:
+        msg: |
+          ✓ Media-ARR Stack Successfully Deployed!
+          
+          Services Running:
+          ✓ Sonarr (TV)          - http://localhost:8989
+          ✓ Radarr (Movies)      - http://localhost:7878
+          ✓ Lidarr (Music)       - http://localhost:8686
+          ✓ Prowlarr (Indexers)  - http://localhost:9696
+          ✓ Bazarr (Subtitles)   - http://localhost:6767
+          ✓ Readarr (Books)      - http://localhost:8787
+          ✓ qBittorrent (Torrent)- http://localhost:8080
+          ✓ FlareArr (CDN/Meta)  - http://localhost:8182
+          ✓ Node Exporter        - http://localhost:9100/metrics
+          
+          Configuration paths:
+          - /config/sonarr
+          - /config/radarr
+          - /config/lidarr
+          - /config/prowlarr
+          - /config/bazarr
+          - /config/readarr
+          - /config/qbittorrent
+          - /config/flarearr
+          
+          Media storage: {{ media_path }}
+          Downloads: {{ downloads_path }}

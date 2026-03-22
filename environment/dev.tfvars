@@ -153,6 +153,28 @@ containers = {
     unprivileged = false
     tags         = ["discord-bot", "csharp", "ubuntu"]
     exporters    = ["node"]
+  },
+  media-arr = {
+    lxc_id     = 1009
+    cores      = 4
+    memory     = 8192
+    disk_size  = 50
+    node       = "arcanine"
+    ip_address = "dhcp"
+    image      = "ubuntu_2204"
+    features = {
+      nesting = true
+      keyctl  = true
+    }
+    mount_points = [
+      {
+        volume = "local-lvm"
+        size   = "100G"
+        path   = "/media"
+      }
+    ]
+    tags      = ["media", "arr-stack", "docker", "ubuntu"]
+    exporters = ["node"]
   }
   
   /* ,

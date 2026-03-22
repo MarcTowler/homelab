@@ -28,6 +28,14 @@
       monitoring_prometheus: 9090
       monitoring_grafana: 3000
       game-server: 8080
+      sonarr: 8989
+      radarr: 7878
+      lidarr: 8686
+      prowlarr: 9696
+      bazarr: 6767
+      readarr: 8787
+      qbittorrent: 8080
+      flarearr: 8182
     
     # Service subdomains
     service_subdomains:
@@ -39,12 +47,35 @@
       monitoring_prometheus: "prometheus"
       monitoring_grafana: "grafana"
       game-server: "game"
+      sonarr: "sonarr"
+      radarr: "radarr"
+      lidarr: "lidarr"
+      prowlarr: "prowlarr"
+      bazarr: "bazarr"
+      readarr: "readarr"
+      qbittorrent: "qbittorrent"
+      flarearr: "flarearr"
 
   tasks:
     # Load vault secrets for Cloudflare and other credentials
     - name: Load vault secrets
       include_vars:
         file: ../inventory/secrets.yml
+
+    # Generate or load media-arr basic auth credentials
+    - name: Generate media-arr basic auth credentials
+      set_fact:
+        media_arr_auth_user: "{{ media_arr_auth_user | default('media-user') }}"
+        media_arr_auth_password: "{{ media_arr_auth_password | default(lookup('password', '/dev/null length=16 chars=ascii_letters,digits')) }}"
+      when: media_arr_auth_user is not defined or media_arr_auth_password is not defined
+
+    - name: Display media-arr auth credentials
+      debug:
+        msg: |
+          Media-arr basic auth configured:
+          Username: {{ media_arr_auth_user }}
+          Password: {{ media_arr_auth_password }}
+      when: media_arr_auth_user is defined
 
     # Install dependencies
     - name: Update package cache

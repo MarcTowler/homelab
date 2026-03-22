@@ -1,0 +1,177 @@
+---
+version: '3.8'
+
+services:
+  # Sonarr - TV Series Management
+  sonarr:
+    image: linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    ports:
+      - "8989:8989"
+    volumes:
+      - /config/sonarr:/config
+      - /media:/media
+      - /downloads:/downloads
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    networks:
+      - media-network
+
+  # Radarr - Movie Management
+  radarr:
+    image: linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    ports:
+      - "7878:7878"
+    volumes:
+      - /config/radarr:/config
+      - /media:/media
+      - /downloads:/downloads
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    networks:
+      - media-network
+
+  # Lidarr - Music Management
+  lidarr:
+    image: linuxserver/lidarr:latest
+    container_name: lidarr
+    restart: unless-stopped
+    ports:
+      - "8686:8686"
+    volumes:
+      - /config/lidarr:/config
+      - /media:/media
+      - /downloads:/downloads
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    networks:
+      - media-network
+
+  # Prowlarr - Indexer Management
+  prowlarr:
+    image: linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    ports:
+      - "9696:9696"
+    volumes:
+      - /config/prowlarr:/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    networks:
+      - media-network
+
+  # Bazarr - Subtitle Management
+  bazarr:
+    image: linuxserver/bazarr:latest
+    container_name: bazarr
+    restart: unless-stopped
+    ports:
+      - "6767:6767"
+    volumes:
+      - /config/bazarr:/config
+      - /media:/media
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    networks:
+      - media-network
+
+  # Readarr - Book Management
+  readarr:
+    image: linuxserver/readarr:nightly
+    container_name: readarr
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    volumes:
+      - /config/readarr:/config
+      - /media:/media
+      - /downloads:/downloads
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    networks:
+      - media-network
+
+  # qBittorrent - Torrent Client
+  qbittorrent:
+    image: linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    ports:
+      - "6881:6881"
+      - "6881:6881/udp"
+      - "8080:8080"
+    volumes:
+      - /config/qbittorrent:/config
+      - /downloads:/downloads
+      - /media:/media
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - WEBUI_PORT=8080
+    networks:
+      - media-network
+
+  # FlareArr - Metadata Enhancement and CDN Integration
+  flarearr:
+    image: bukowa/flarearr:latest
+    container_name: flarearr
+    restart: unless-stopped
+    ports:
+      - "8182:8182"
+    volumes:
+      - /config/flarearr:/config
+      - /media:/media
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    networks:
+      - media-network
+
+  # Node Exporter - Prometheus metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    command:
+      - '--path.rootfs=/'
+      - '--path.procfs=/proc'
+      - '--path.sysfs=/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /:/rootfs:ro
+      - /proc:/proc:ro
+      - /sys:/sys:ro
+    networks:
+      - media-network
+
+networks:
+  media-network:
+    driver: bridge
+
+volumes:
+  media:
+    driver: local
+  config:
+    driver: local
+  downloads:
+    driver: local
