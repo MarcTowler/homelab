@@ -31,9 +31,9 @@
     "vmid": 1002
   "homepage":
     "icon": "homepage.png"
-    "ip": "10.0.1.178"
+    "ip": "10.0.1.180"
     "name": "homepage"
-    "node": "arcanine"
+    "node": "fuecoco"
     "vmid": 1004
   "media-arr":
     "icon": "mdi-container"
@@ -49,9 +49,9 @@
     "vmid": 1006
   "site":
     "icon": "php.png"
-    "ip": "10.0.1.166"
+    "ip": "10.0.1.198"
     "name": "site"
-    "node": "arcanine"
+    "node": "growlithe"
     "vmid": 1003
   "traefik":
     "icon": "traefik.png"

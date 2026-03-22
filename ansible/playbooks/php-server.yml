@@ -1,7 +1,7 @@
 ---
 # API Server role - Apache + PHP configuration
 - name: Install and configure Apache API server
-  hosts: api_servers
+  hosts: api_servers, site
   gather_facts: yes
   become: yes
 

@@ -29,7 +29,7 @@
     "exporters":
     - "node"
     "hostname": "homepage"
-    "ip": "10.0.1.178"
+    "ip": "10.0.1.180"
   "media-arr":
     "exporters":
     - "node"
@@ -44,7 +44,7 @@
     "exporters":
     - "node"
     "hostname": "site"
-    "ip": "10.0.1.166"
+    "ip": "10.0.1.198"
   "traefik":
     "exporters":
     - "node"
