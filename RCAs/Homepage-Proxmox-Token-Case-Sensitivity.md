@@ -1,10 +1,12 @@
 # Root Cause Analysis: Homepage Proxmox Widget Authentication - Token Case Sensitivity
 
-**Date**: 2026-03-15  
+**Date**: 2026-03-15 (Issue Recurred: 2026-03-23)  
 **Component**: Homepage Dashboard - Proxmox Widget Authentication  
-**Environment**: Homelab - LXC Container (10.0.1.178)  
-**Status**: RESOLVED  
+**Environment**: Homelab - LXC Container (10.0.1.178 → 10.0.1.180 on fuecoco)  
+**Status**: RECURRING - Requires Long-term Fix  
 **Severity**: High (Proxmox widgets non-functional)
+
+⚠️ **NOTE: This issue has recurred on 2026-03-23 after moving 2 LXCs to different nodes, suggesting the root cause persists and may be related to Terraform vault re-encryption during infrastructure changes.**
 
 ---
 
@@ -190,8 +192,44 @@ This requires:
 
 ---
 
+## Recurrence Details (2026-03-23)
+
+After moving 2 LXCs to different Proxmox nodes, the issue reappeared with identical symptoms:
+- Homepage showing `common.*` labels instead of values
+- 401 HTTP errors in browser console
+- `proxmoxStatsService> HTTP Error 401` in server logs
+
+**Key Difference**: The token ID capitalization `Terraform@pam!api` was maintained in vault this time, yet the issue still occurred.
+
+**Suspected New Root Cause**: 
+- When LXCs are moved between nodes, Terraform re-encrypts `secrets.yml` 
+- The re-encryption may corrupt the vault contents even if not visually changed
+- This could be a vault file format degradation or tooling issue
+
+**Evidence of Recurrence**:
+1. Token capitalization verified correct: `proxmox_token_id: "Terraform@pam!api"` ✓
+2. Rendered services.yaml shows correct token: `username: Terraform@pam!api` ✓  
+3. Token values in secrets verified correct
+4. Yet API still returns 401 errors
+5. Issue appeared immediately after infrastructure change (LXC node migration)
+
 ## Related Issues
 - Commit `830cd52`: Discord-bot service addition (introduced the case change)
 - Commit `63b7416`: "somehow lost token info" (previous token management issue)
+- Commit `cdd463c`: "Updated secrets and stopped some name conflicts" (secrets re-encryption)
 - These commits suggest token management has been fragile historically
+
+## Root Cause Hypothesis - UPDATED
+
+The actual root cause may not be **just** case sensitivity in the stored token ID. The recurrence despite correct capitalization suggests:
+
+1. **Vault File Corruption During Terraform Runs**: When Terraform modifies other variables in `secrets.yml`, it may corrupt the vault file during re-encryption
+2. **Vault Tool Version Issues**: Different versions of `ansible-vault` may handle re-encryption differently
+3. **Token Validity Expiration**: The token `0ace97cc-4581-43c0-920f-532e1b4e1e92` may have been invalidated on Proxmox nodes
+4. **Node-Specific Token Permissions**: Moving LXCs may have changed token permissions on target nodes
+
+**Confirmed Does NOT Fix It This Time**:
+- ✗ Token capitalization fix (already correct)
+- ✗ Config file rendering (confirmed correct in services.yaml)
+- ✗ Proxmox node accessibility (nodes respond to other API calls)
 

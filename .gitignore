@@ -37,6 +37,8 @@ terraform.tfvars
 ansible/files/*deploy_key
 ansible/.vault_pass
 # Squad: ignore runtime state (logs, inbox, sessions)
+.squad/*
+.copilot/*
 .squad/orchestration-log/
 .squad/log/
 .squad/decisions/inbox/
