@@ -67,7 +67,6 @@
   [http.middlewares.add-headers.headers]
     [http.middlewares.add-headers.headers.customRequestHeaders]
       X-Forwarded-Proto = "https"
-      X-Forwarded-Host = "{{ domain_name }}"
       X-Forwarded-Port = "443"
 
   # Basic Auth for media-arr services
