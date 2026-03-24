@@ -1,133 +1,21 @@
 ---
-# API Server Playbook
-- name: Update the API server and install necessary packages
+# API Server Playbook (Refactored to use php-app role)
+# Reduced from 134 lines to 24 lines using centralized role
+
+- name: Deploy API Server
   hosts: api
   gather_facts: yes
   become: yes
 
-  vars:
-    app_root: /var/www/api
-    app_user: www-data
-    app_group: www-data
-    php_version: "{{ php_config.version }}"
-
-  tasks:
+  pre_tasks:
     - name: Load vault secrets
       include_vars:
         file: ../inventory/secrets.yml
 
-    - name: Create application directory
-      file:
-        path: "{{ app_root }}"
-        state: directory
-        owner: "{{ app_user }}"
-        group: "{{ app_group }}"
-        mode: '0755'
-
-    - name: Create Apache VirtualHost configuration
-      template:
-        src: ../templates/services/apache-api.conf.j2
-        dest: /etc/apache2/sites-available/api.conf
-        owner: root
-        group: root
-        mode: '0644'
-      notify: reload apache2
-
-    - name: Enable API site
-      command: a2ensite api
-      notify: reload apache2
-
-    - name: Ensure /root/.ssh directory exists
-      file:
-        path: /root/.ssh
-        state: directory
-        mode: '0700'
-
-    - name: Copy GitHub Deploy Key to LXC
-      copy:
-        src: "../files/api_deploy_key" # Path to the private key on your Ansible control node
-        dest: "/root/.ssh/api_deploy_key"    # Temporary location on the LXC
-        mode: '0600'
-
-    - name: Wipe broken git directory from previous failures
-      file:
-        path: "{{ app_root }}"
-        state: absent
-
-    - name: Pull latest code from Git repository
-      git:
-        repo: git@github.com:ItsLit-Media-and-Development/api.git
-        dest: "{{ app_root }}"
-        version: master
-        force: yes
-        update: yes
-        accept_hostkey: yes
-        key_file: "/root/.ssh/api_deploy_key"
-      notify: restart apache2
-
-    - name: Install Composer dependencies
-      shell: "cd {{ app_root }} && composer install --no-interaction --optimize-autoloader --no-cache"
-      changed_when: false
-      notify: restart apache2
-
-    - name: Clean up temporary Deploy Key
-      file:
-        path: "/tmp/api_deploy_key"
-        state: absent
-      notify: restart apache2
-    
-    - name: Ensure the Config directory exists
-      file:
-        path: "{{ app_root }}/src/Config"
-        state: directory
-        owner: "{{ app_user }}"
-        group: "{{ app_group }}"
-        mode: 0755
-
-    - name: Copy site.ini to the API filesystem
-      template:
-        src: ../templates/services/site.ini.j2
-        dest: "{{ app_root }}/src/Config/site.ini"
-        owner: "{{ app_user }}"
-        group: "{{ app_group }}"
-        mode: '0644'
-
-    - name: Configure PHP (php.ini)
-      lineinfile:
-        path: "/etc/php/{{ php_version }}/apache2/php.ini"
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-        state: present
-      loop:
-        - { regexp: '^memory_limit', line: 'memory_limit = {{ php_config.memory_limit }}' }
-        - { regexp: '^max_execution_time', line: 'max_execution_time = {{ php_config.max_execution_time }}' }
-        - { regexp: '^upload_max_filesize', line: 'upload_max_filesize = {{ php_config.upload_max_filesize }}' }
-        - { regexp: '^post_max_size', line: 'post_max_size = {{ php_config.post_max_size }}' }
-      notify: reload apache2
-
-    - name: Enable and start Apache
-      systemd:
-        name: apache2
-        enabled: yes
-        state: started
-  
-  handlers:
-    - name: reload apache2
-      systemd:
-        name: apache2
-        state: reloaded
-
-    - name: restart apache2
-      systemd:
-        name: apache2
-        state: restarted
-
-  post_tasks:
-    - name: Verify Apache configuration
-      command: apache2ctl configtest
-      register: apache_test
-      changed_when: false
-
-    - name: Report Apache configuration test
-      debug:
-        msg: "{{ apache_test.stdout_lines }}"
+  roles:
+    - role: php-app
+      vars:
+        app_name: api
+        app_root: /var/www/api
+        repo_url: git@github.com:ItsLit-Media-and-Development/api.git
+        deploy_key: api_deploy_key
