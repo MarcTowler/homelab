@@ -25,10 +25,7 @@
         file: ../inventory/secrets.yml
 
     # Install dependencies
-    - name: Update apt cache
-      apt:
-        update_cache: yes
-        cache_valid_time: 3600
+    - include_tasks: ../tasks/common-setup.yml
 
     - name: Install required packages
       apt:

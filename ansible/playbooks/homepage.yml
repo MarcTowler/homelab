@@ -13,6 +13,8 @@
     npm_timeout: 3600  # 1 hour timeout for npm commands
 
   tasks:
+    - include_tasks: ../tasks/common-setup.yml
+
     - name: Get pnpm path
       command: which pnpm
       register: pnpm_output

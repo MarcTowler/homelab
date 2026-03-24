@@ -6,6 +6,10 @@
     - name: Load vault secrets
       include_vars:
         file: ../inventory/secrets.yml
+    
+    # System preparation
+    - include_tasks: ../tasks/common-setup.yml
+    
     - name: Ensure dependencies are present
       apt:
         name: [curl, wget, socat, software-properties-common, dirmngr]

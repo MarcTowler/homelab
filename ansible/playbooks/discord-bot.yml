@@ -18,6 +18,9 @@
       include_vars:
         file: ../inventory/secrets.yml
 
+    # System preparation
+    - include_tasks: ../tasks/common-setup.yml
+
     # Install .NET SDK dependencies for Ubuntu 24.04
     - name: Install required system dependencies
       apt:
@@ -30,7 +33,6 @@
           - apt-transport-https
           - software-properties-common
         state: present
-        update_cache: yes
 
     # Add Microsoft's .NET package repository
     - name: Download Microsoft GPG key

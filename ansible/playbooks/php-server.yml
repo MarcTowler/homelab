@@ -6,11 +6,7 @@
   become: yes
 
   pre_tasks:
-    - name: Update package cache
-      apt:
-        update_cache: yes
-        cache_valid_time: 3600
-      when: ansible_facts["os_family"] == "Debian"
+    - include_tasks: ../tasks/common-setup.yml
 
   tasks:
     - name: Install Apache and PHP packages

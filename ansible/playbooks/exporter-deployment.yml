@@ -16,6 +16,8 @@
     node_exporter_port: 9100
 
   tasks:
+    - include_tasks: ../tasks/common-setup.yml
+
     - name: Create node_exporter user
       user:
         name: "{{ node_exporter_user }}"
