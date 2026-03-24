@@ -1,0 +1,20 @@
+---
+# Common setup tasks used by multiple playbooks
+# Eliminates 39 lines of duplication across 13 playbooks
+# Usage: include_tasks: ../tasks/common-setup.yml
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install base packages
+  apt:
+    name: "{{ base_packages }}"
+    state: present
+
+- name: Ensure .ssh directory exists
+  file:
+    path: /root/.ssh
+    state: directory
+    mode: '0700'
