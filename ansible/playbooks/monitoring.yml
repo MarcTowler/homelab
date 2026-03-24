@@ -67,16 +67,18 @@
         - "{{ prometheus_config_dir }}"
         - "{{ prometheus_data_dir }}"
 
-    - name: Download Prometheus
-      shell: |
-        cd /tmp
-        wget -q https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz
-        tar xzf prometheus-{{ prometheus_version }}.linux-amd64.tar.gz
-        cp prometheus-{{ prometheus_version }}.linux-amd64/prometheus {{ prometheus_install_dir }}/
-        cp prometheus-{{ prometheus_version }}.linux-amd64/promtool {{ prometheus_install_dir }}/
-        rm -rf prometheus-{{ prometheus_version }}.linux-amd64*
-      args:
-        creates: "{{ prometheus_install_dir }}/prometheus"
+    - name: Download and install Prometheus
+      include_role:
+        name: ../roles/system-tools
+        tasks_from: download-binary
+      vars:
+        binary_name: prometheus
+        download_url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+        extract_dir: "prometheus-{{ prometheus_version }}.linux-amd64"
+        binaries_to_copy:
+          - prometheus
+          - promtool
+        install_dir: "{{ prometheus_install_dir }}"
 
     - name: Set Prometheus permissions
       file:

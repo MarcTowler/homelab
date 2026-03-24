@@ -1,0 +1,52 @@
+---
+# Download and install a binary from a URL
+#
+# Required variables:
+#   binary_name: Name of the binary (e.g., "terraform", "prometheus")
+#   download_url: Full URL to download the archive
+#
+# Optional variables:
+#   install_dir: Where to install the binary (default: /usr/local/bin)
+#   extract_dir: Directory name after extraction (e.g., "prometheus-2.45.0.linux-amd64")
+#   binaries_to_copy: List of binaries to copy from archive (default: [binary_name])
+
+- name: Set default values
+  set_fact:
+    _install_dir: "{{ install_dir | default('/usr/local/bin') }}"
+    _binaries_to_copy: "{{ binaries_to_copy | default([binary_name]) }}"
+
+- name: Detect archive type from URL
+  set_fact:
+    _archive_type: "{{ 'zip' if download_url.endswith('.zip') else 'tar.gz' }}"
+
+- name: Download and extract tar.gz archive
+  shell: |
+    cd /tmp
+    wget -q "{{ download_url }}" -O archive.{{ _archive_type }}
+    {% if _archive_type == 'tar.gz' %}
+    tar xzf archive.{{ _archive_type }}
+    {% else %}
+    unzip -qo archive.{{ _archive_type }}
+    {% endif %}
+  args:
+    creates: "{{ _install_dir }}/{{ binary_name }}"
+
+- name: Copy binaries to install directory
+  shell: |
+    {% if extract_dir is defined %}
+    cp /tmp/{{ extract_dir }}/{{ item }} {{ _install_dir }}/{{ item }}
+    {% else %}
+    find /tmp -name "{{ item }}" -type f -executable -exec cp {} {{ _install_dir }}/{{ item }} \;
+    {% endif %}
+    chmod 755 {{ _install_dir }}/{{ item }}
+  loop: "{{ _binaries_to_copy }}"
+  args:
+    creates: "{{ _install_dir }}/{{ item }}"
+
+- name: Clean up temporary files
+  shell: |
+    rm -f /tmp/archive.{{ _archive_type }}
+    {% if extract_dir is defined %}
+    rm -rf /tmp/{{ extract_dir }}
+    {% endif %}
+  changed_when: false

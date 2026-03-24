@@ -57,32 +57,13 @@
           - python3-venv
         state: present
 
-    - name: Install Terraform
-      shell: |
-        TERRAFORM_VERSION="1.14.4"
-        TERRAFORM_URL="https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
-        
-        cd /tmp
-        wget -q "$TERRAFORM_URL" -O terraform.zip
-        unzip -o terraform.zip
-        chmod +x terraform
-        mv terraform /usr/local/bin/terraform
-        rm terraform.zip
-      changed_when: false
-      register: terraform_install
-
-    - name: Verify Terraform installation
-      shell: /usr/local/bin/terraform version
-      changed_when: false
-      failed_when: terraform_version.rc != 0
-      register: terraform_version
-
-    - name: Ensure terraform is executable
-      file:
-        path: /usr/local/bin/terraform
-        mode: '0755'
-        owner: root
-        group: root
+    - name: Download and install Terraform
+      include_role:
+        name: ../roles/system-tools
+        tasks_from: download-binary
+      vars:
+        binary_name: terraform
+        download_url: "https://releases.hashicorp.com/terraform/1.14.4/terraform_1.14.4_linux_amd64.zip"
 
     - name: Create tf symlink (to avoid GitHub Actions secret masking)
       file:
@@ -90,6 +71,7 @@
         dest: /usr/local/bin/tf
         state: link
         force: yes
+
     - name: Create github runner user
       user:
         name: "{{ runner_user }}"

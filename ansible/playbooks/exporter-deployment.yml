@@ -33,15 +33,15 @@
         group: root
         mode: '0755'
 
-    - name: Download node_exporter
-      shell: |
-        cd /tmp
-        wget -q https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz
-        tar xzf node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz
-        cp node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter {{ node_exporter_install_dir }}/
-        rm -rf node_exporter-{{ node_exporter_version }}.linux-amd64*
-      args:
-        creates: "{{ node_exporter_install_dir }}/node_exporter"
+    - name: Download and install Node Exporter
+      include_role:
+        name: ../roles/system-tools
+        tasks_from: download-binary
+      vars:
+        binary_name: node_exporter
+        download_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        extract_dir: "node_exporter-{{ node_exporter_version }}.linux-amd64"
+        install_dir: "{{ node_exporter_install_dir }}"
 
     - name: Set node_exporter permissions
       file:

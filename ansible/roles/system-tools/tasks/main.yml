@@ -1,0 +1,33 @@
+---
+# System Tools Role
+# Handles downloading and installing binary tools from archives
+#
+# This role provides a reusable way to download and install binaries
+# from tar.gz or zip archives, commonly used for tools like:
+# - Prometheus, Node Exporter (monitoring)
+# - Terraform (infrastructure)
+# - Custom binaries
+#
+# Usage:
+#   - include_role:
+#       name: ../roles/system-tools
+#       tasks_from: download-binary
+#     vars:
+#       binary_name: terraform
+#       download_url: "https://releases.hashicorp.com/terraform/1.14.4/terraform_1.14.4_linux_amd64.zip"
+#
+#   - include_role:
+#       name: ../roles/system-tools
+#       tasks_from: download-binary
+#     vars:
+#       binary_name: prometheus
+#       download_url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+#       extract_dir: "prometheus-{{ prometheus_version }}.linux-amd64"
+#       binaries_to_copy:
+#         - prometheus
+#         - promtool
+#       install_dir: "{{ prometheus_install_dir }}"
+
+# This is intentionally empty - users should include download-binary.yml directly
+# with their specific parameters
+
