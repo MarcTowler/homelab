@@ -35,6 +35,9 @@
 
 - name: Deploy media-arr stack
   import_playbook: media-arr.yml
+
+- name: Configure media-arr stack
+  import_playbook: media-arr-configure.yml
   
 - name: Configure monitoring stack
   import_playbook: monitoring.yml

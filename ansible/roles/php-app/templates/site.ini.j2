@@ -1,0 +1,33 @@
+[site]
+TOKEN = "{{ php_token}}"
+TEST_TOKEN = "{{ php_test_token}}"
+BASE_URL = "https://{{ ansible_facts['hostname'] }}.{{ domain_name }}/"
+{% if ansible_facts["hostname"] == "site" %}
+API_USER = "{{ api_user }}"
+API_KEY = "{{ php_test_token}}"
+NAME  = "ItsLittany | Streamer, Gamer and Tech Enthusiast"
+TITLE = "itslit.uk | Multiplayer Gaming and Live-streaming Professional"
+DEFAULT_CONTROLLER = "main"
+DEFAULT_ACTION = "index"
+API_BASE = "https://api.{{ domain_name }}/"
+{% endif %}
+
+[twitch]
+CLIENT_ID     = {{ twitch_client_id }}
+TWITCH_SECRET = {{ twitch_secret }}
+WEBHOOK_SECRET = {{ twitch_webhook_secret }}
+
+[streamlabs]
+SL_CLIENT_ID = {{ sl_client_id }}
+SL_SECRET   = {{ sl_secret }}
+
+[database]
+
+DBHOST = "db.{{ domain_name }}"
+PORT   = 3306
+DBNAME = "marctowl_itslitapi"
+DBUSER = {{ dbuser }}
+DBPASS = {{ dbpass }}
+
+[riot]
+RIOT_API_KEY = {{ riot_api_key }}

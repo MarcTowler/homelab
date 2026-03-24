@@ -1,0 +1,156 @@
+---
+# PHP Application Deployment Role
+# Consolidates api.yml, website.yml, and gapi.yml (402 lines → 150 lines total)
+#
+# Required variables:
+#   app_name:    Name of the application (e.g., "api", "website", "gapi")
+#   app_root:    Root directory path (e.g., "/var/www/api")
+#   repo_url:    Git repository URL
+#   deploy_key:  Name of deploy key file in ansible/files/
+#
+# Example usage:
+#   roles:
+#     - role: php-app
+#       vars:
+#         app_name: api
+#         app_root: /var/www/api
+#         repo_url: git@github.com:ItsLit-Media-and-Development/api.git
+#         deploy_key: api_deploy_key
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install Apache and PHP
+  apt:
+    name:
+      - apache2
+      - "php{{ php_config.version }}"
+      - "php{{ php_config.version }}-fpm"
+      - "php{{ php_config.version }}-mysql"
+      - "php{{ php_config.version }}-curl"
+      - "php{{ php_config.version }}-gd"
+      - "php{{ php_config.version }}-mbstring"
+      - "php{{ php_config.version }}-xml"
+      - "php{{ php_config.version }}-zip"
+      - composer
+    state: present
+
+- name: Create application directory
+  file:
+    path: "{{ app_root }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+
+- name: Configure Apache VirtualHost
+  template:
+    src: apache-vhost.conf.j2
+    dest: "/etc/apache2/sites-available/{{ app_name }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload apache2
+
+- name: Enable site
+  command: "a2ensite {{ app_name }}"
+  notify: reload apache2
+  args:
+    creates: "/etc/apache2/sites-enabled/{{ app_name }}.conf"
+
+- name: Ensure /root/.ssh directory exists
+  file:
+    path: /root/.ssh
+    state: directory
+    mode: '0700'
+
+- name: Deploy SSH key for git
+  copy:
+    src: "../../files/{{ deploy_key }}"
+    dest: "/root/.ssh/{{ deploy_key }}"
+    mode: '0600'
+
+- name: Add GitHub to known hosts
+  shell: |
+    ssh-keyscan github.com >> /root/.ssh/known_hosts
+  args:
+    creates: /root/.ssh/known_hosts
+
+- name: Pull latest code from Git repository
+  git:
+    repo: "{{ repo_url }}"
+    dest: "{{ app_root }}"
+    version: master
+    force: yes
+    update: yes
+    accept_hostkey: yes
+    key_file: "/root/.ssh/{{ deploy_key }}"
+  notify: restart apache2
+
+- name: Set ownership of application files
+  file:
+    path: "{{ app_root }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    recurse: yes
+
+- name: Install Composer dependencies
+  shell: "cd {{ app_root }} && composer install --no-interaction --optimize-autoloader --no-cache"
+  changed_when: false
+  notify: restart apache2
+
+- name: Ensure Config directory exists
+  file:
+    path: "{{ app_root }}/src/Config"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+
+- name: Deploy site.ini configuration
+  template:
+    src: site.ini.j2
+    dest: "{{ app_root }}/src/Config/site.ini"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0644'
+
+- name: Configure PHP settings
+  lineinfile:
+    path: "/etc/php/{{ php_config.version }}/apache2/php.ini"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  loop:
+    - { regexp: '^memory_limit', line: "memory_limit = {{ php_config.memory_limit }}" }
+    - { regexp: '^max_execution_time', line: "max_execution_time = {{ php_config.max_execution_time }}" }
+    - { regexp: '^upload_max_filesize', line: "upload_max_filesize = {{ php_config.upload_max_filesize }}" }
+    - { regexp: '^post_max_size', line: "post_max_size = {{ php_config.post_max_size }}" }
+  notify: reload apache2
+
+- name: Enable Apache modules
+  apache2_module:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - rewrite
+    - headers
+  notify: restart apache2
+
+- name: Enable and start Apache
+  systemd:
+    name: apache2
+    enabled: yes
+    state: started
+
+- name: Verify Apache configuration
+  command: apache2ctl configtest
+  register: apache_test
+  changed_when: false
+  failed_when: false
+
+- name: Report Apache configuration test
+  debug:
+    msg: "{{ apache_test.stdout_lines }}"

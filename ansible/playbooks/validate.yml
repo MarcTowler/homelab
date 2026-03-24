@@ -319,12 +319,12 @@
           ✓ Node Exporter         - HEALTHY (http://localhost:9100/metrics)
           
           Access via Traefik (with authentication):
-          - https://sonarr.itslit.me.uk
-          - https://radarr.itslit.me.uk
-          - https://lidarr.itslit.me.uk
-          - https://prowlarr.itslit.me.uk
-          - https://bazarr.itslit.me.uk
-          - https://qbittorrent.itslit.me.uk
+          - https://sonarr.{{ domain_name }}
+          - https://radarr.{{ domain_name }}
+          - https://lidarr.{{ domain_name }}
+          - https://prowlarr.{{ domain_name }}
+          - https://bazarr.{{ domain_name }}
+          - https://qbittorrent.{{ domain_name }}
           
           Configuration locations: /config/*
           Media storage: /media

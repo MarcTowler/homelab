@@ -60,3 +60,41 @@ qbittorrent_default_password: "adminPassword"  # Should be from vault
 # Resource monitoring
 enable_prometheus_monitoring: true
 prometheus_scrape_interval: 30s
+
+# Jellyfin plugin configuration
+# Plugins to install automatically via Ansible
+# Each plugin requires: name, guid (from Jellyfin plugin repository)
+# Optionally specify version (defaults to latest)
+jellyfin_plugins:
+  - name: "Trakt"
+    guid: "a4df60c5-6ab4-412a-8f79-2cab93fb2bc5"
+    description: "Scrobble watched content to Trakt.tv"
+  
+  - name: "TheTVDB"
+    guid: "a677c0da-fac5-4cde-941a-7134223f14c8"
+    description: "Metadata provider for TV shows"
+  
+  - name: "Open Subtitles"
+    guid: "4b9ed42f-5185-48b5-9803-6ff2989014c4"
+    description: "Download subtitles from OpenSubtitles.org"
+  
+  - name: "Fanart"
+    guid: "b2a6935b-9ca6-4d9f-8d3e-d9a30c6a5f83"
+    description: "Enhanced artwork and fanart provider"
+  
+  - name: "Playback Reporting"
+    guid: "5c53438191a343cb907a35aa02eb9d2c"
+    description: "Track playback statistics and viewing habits"
+
+# Additional available plugins (uncomment to enable):
+# - name: "Kodi Sync Queue"
+#   guid: "aff7e100-ef3d-4cdb-b3fb-f5f9bd6ca8d4"
+#   description: "Sync Jellyfin library with Kodi"
+#
+# - name: "LDAP Authentication"
+#   guid: "958aad66-3784-4d2a-b89a-a7b6fab6e25c"
+#   description: "Enterprise LDAP/AD authentication"
+#
+# - name: "Anime"
+#   guid: "0417364b-5a93-4ad0-a1f0-b87569a7cf8c"
+#   description: "Enhanced anime metadata from AniDB"

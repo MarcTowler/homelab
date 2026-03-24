@@ -1,0 +1,701 @@
+---
+- name: Configure media-arr service integrations
+  hosts: media-arr
+  become: yes
+  gather_facts: yes
+  vars_files:
+    - ../inventory/secrets.yml
+  
+  vars:
+    # Internal service URLs (using Docker service names for inter-container communication)
+    service_urls:
+      prowlarr: "http://prowlarr:9696"
+      sonarr: "http://sonarr:8989"
+      radarr: "http://radarr:7878"
+      lidarr: "http://lidarr:8686"
+      bazarr: "http://bazarr:6767"
+      qbittorrent: "http://qbittorrent:8080"
+      flaresolverr: "http://flaresolverr:8191"
+    
+    # For API calls we use localhost since we're on the container
+    api_base:
+      prowlarr: "http://localhost:9696"
+      sonarr: "http://localhost:8989"
+      radarr: "http://localhost:7878"
+      lidarr: "http://localhost:8686"
+      bazarr: "http://localhost:6767"
+      qbittorrent: "http://localhost:8080"
+      flaresolverr: "http://localhost:8191"
+    
+    # qBittorrent categories per service
+    qbit_categories:
+      sonarr: "tv"
+      radarr: "movies"
+      lidarr: "music"
+    
+    # Media library paths
+    media_paths:
+      tv: "/media/tv"
+      movies: "/media/movies"
+      music: "/media/music"
+
+  tasks:
+    # ==========================================
+    # Phase 0a: Configure qBittorrent Credentials
+    # ==========================================
+    - name: Stop qBittorrent container to set password
+      shell: cd /var/lib/media-arr && docker compose stop qbittorrent
+      args:
+    
+    - name: Generate qBittorrent password hash
+      shell: |
+        python3 -c "import hashlib; import base64; password='{{ qbittorrent_password }}'; m=hashlib.pbkdf2_hmac('sha512', password.encode('utf-8'), b'', 100000); print(base64.b64encode(m).decode('utf-8'))"
+      register: qbit_password_hash
+      changed_when: false
+    
+    - name: Configure qBittorrent WebUI credentials
+      lineinfile:
+        path: /config/qbittorrent/qBittorrent/qBittorrent.conf
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        insertafter: "^\\[Preferences\\]"
+      loop:
+        - { regexp: '^WebUI\\Username=', line: 'WebUI\Username={{ qbittorrent_username }}' }
+        - { regexp: '^WebUI\\Password_PBKDF2=', line: 'WebUI\Password_PBKDF2="@ByteArray({{ qbit_password_hash.stdout }})"' }
+        - { regexp: '^WebUI\\LocalHostAuth=', line: 'WebUI\LocalHostAuth=false' }
+        - { regexp: '^WebUI\\AuthSubnetWhitelistEnabled=', line: 'WebUI\AuthSubnetWhitelistEnabled=true' }
+        - { regexp: '^WebUI\\AuthSubnetWhitelist=', line: 'WebUI\AuthSubnetWhitelist=172.18.0.0/16, 127.0.0.1/32' }
+    
+    - name: Start qBittorrent container
+      shell: cd /var/lib/media-arr && docker compose start qbittorrent
+      args:
+    
+    - name: Wait for qBittorrent to restart
+      wait_for:
+        host: localhost
+        port: 8080
+        delay: 5
+        timeout: 60
+
+    # ==========================================
+    # Phase 0b: Pre-flight checks
+    # ==========================================
+    - name: Wait for all services to be responsive
+      wait_for:
+        host: localhost
+        port: "{{ item }}"
+        delay: 5
+        timeout: 120
+      loop:
+        - 9696  # Prowlarr
+        - 8989  # Sonarr
+        - 7878  # Radarr
+        - 8686  # Lidarr
+        - 6767  # Bazarr
+        - 8080  # qBittorrent
+        - 8191  # FlareSolverr
+        - 8096  # Jellyfin
+      tags: [always]
+
+    # ==========================================
+    # Phase 1: Extract API Keys from Configs
+    # ==========================================
+    - name: Extract Prowlarr API key
+      shell: grep -oP '<ApiKey>\K[^<]+' /config/prowlarr/config.xml
+      register: prowlarr_api_result
+      changed_when: false
+      
+    - name: Extract Sonarr API key
+      shell: grep -oP '<ApiKey>\K[^<]+' /config/sonarr/config.xml
+      register: sonarr_api_result
+      changed_when: false
+      
+    - name: Extract Radarr API key
+      shell: grep -oP '<ApiKey>\K[^<]+' /config/radarr/config.xml
+      register: radarr_api_result
+      changed_when: false
+      
+    - name: Extract Lidarr API key
+      shell: grep -oP '<ApiKey>\K[^<]+' /config/lidarr/config.xml
+      register: lidarr_api_result
+      changed_when: false
+
+    - name: Extract Bazarr API key
+      shell: grep "^apikey = " /config/bazarr/config/config.ini | cut -d' ' -f3
+      register: bazarr_api_result
+      changed_when: false
+
+    - name: Store API keys in facts
+      set_fact:
+        api_keys:
+          prowlarr: "{{ prowlarr_api_result.stdout }}"
+          sonarr: "{{ sonarr_api_result.stdout }}"
+          radarr: "{{ radarr_api_result.stdout }}"
+          lidarr: "{{ lidarr_api_result.stdout }}"
+          bazarr: "{{ bazarr_api_result.stdout }}"
+
+    - name: Display extracted API keys (for debugging)
+      debug:
+        msg: "Extracted {{ api_keys.keys() | length }} API keys successfully"
+      tags: [never, debug]
+
+    # ==========================================
+    # Phase 2: Create Media Directories
+    # ==========================================
+    - name: Create media library directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "1000"
+        group: "1000"
+        mode: '0775'
+        mode: '0755'
+      loop:
+        - "{{ media_paths.tv }}"
+        - "{{ media_paths.movies }}"
+        - "{{ media_paths.music }}"
+
+    # ==========================================
+    # Phase 3: Configure Prowlarr Applications
+    # ==========================================
+    - name: Check if Sonarr already configured in Prowlarr
+      uri:
+        url: "{{ api_base.prowlarr }}/api/v1/applications"
+        method: GET
+        headers:
+          X-Api-Key: "{{ api_keys.prowlarr }}"
+        status_code: [200]
+      register: prowlarr_apps
+      changed_when: false
+
+    - name: Add Sonarr to Prowlarr applications
+      uri:
+        url: "{{ api_base.prowlarr }}/api/v1/applications"
+        method: POST
+        headers:
+          X-Api-Key: "{{ api_keys.prowlarr }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "Sonarr"
+          syncLevel: "addOnly"
+          implementation: "Sonarr"
+          implementationName: "Sonarr"
+          configContract: "SonarrSettings"
+          fields:
+            - name: "prowlarrUrl"
+              value: "{{ service_urls.prowlarr }}"
+            - name: "baseUrl"
+              value: "{{ service_urls.sonarr }}"
+            - name: "apiKey"
+              value: "{{ api_keys.sonarr }}"
+            - name: "syncCategories"
+              value: [5000, 5010, 5020, 5030, 5040, 5045, 5050, 5070, 5080, 5090]
+        status_code: [200, 201]
+      when: prowlarr_apps.json | selectattr('implementation', 'equalto', 'Sonarr') | list | length == 0
+
+    - name: Add Radarr to Prowlarr applications
+      uri:
+        url: "{{ api_base.prowlarr }}/api/v1/applications"
+        method: POST
+        headers:
+          X-Api-Key: "{{ api_keys.prowlarr }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "Radarr"
+          syncLevel: "addOnly"
+          implementation: "Radarr"
+          implementationName: "Radarr"
+          configContract: "RadarrSettings"
+          fields:
+            - name: "prowlarrUrl"
+              value: "{{ service_urls.prowlarr }}"
+            - name: "baseUrl"
+              value: "{{ service_urls.radarr }}"
+            - name: "apiKey"
+              value: "{{ api_keys.radarr }}"
+            - name: "syncCategories"
+              value: [2000, 2010, 2020, 2030, 2040, 2045, 2050, 2060, 2070, 2080]
+        status_code: [200, 201]
+      when: prowlarr_apps.json | selectattr('implementation', 'equalto', 'Radarr') | list | length == 0
+
+    - name: Add Lidarr to Prowlarr applications
+      uri:
+        url: "{{ api_base.prowlarr }}/api/v1/applications"
+        method: POST
+        headers:
+          X-Api-Key: "{{ api_keys.prowlarr }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "Lidarr"
+          syncLevel: "addOnly"
+          implementation: "Lidarr"
+          implementationName: "Lidarr"
+          configContract: "LidarrSettings"
+          fields:
+            - name: "prowlarrUrl"
+              value: "{{ service_urls.prowlarr }}"
+            - name: "baseUrl"
+              value: "{{ service_urls.lidarr }}"
+            - name: "apiKey"
+              value: "{{ api_keys.lidarr }}"
+            - name: "syncCategories"
+              value: [3000, 3010, 3020, 3030, 3040, 3050, 3060]
+        status_code: [200, 201]
+      when: prowlarr_apps.json | selectattr('implementation', 'equalto', 'Lidarr') | list | length == 0
+
+    # ==========================================
+    # Phase 4: Configure FlareSolverr Proxy
+    # ==========================================
+    - name: Check if FlareSolverr already configured in Prowlarr
+      uri:
+        url: "{{ api_base.prowlarr }}/api/v1/indexerproxy"
+        method: GET
+        headers:
+          X-Api-Key: "{{ api_keys.prowlarr }}"
+        status_code: [200]
+      register: prowlarr_proxies
+      changed_when: false
+
+    - name: Add FlareSolverr proxy to Prowlarr
+      uri:
+        url: "{{ api_base.prowlarr }}/api/v1/indexerproxy"
+        method: POST
+        headers:
+          X-Api-Key: "{{ api_keys.prowlarr }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "FlareSolverr"
+          implementation: "FlareSolverr"
+          implementationName: "FlareSolverr"
+          configContract: "FlareSolverrSettings"
+          fields:
+            - name: "host"
+              value: "{{ service_urls.flaresolverr }}"
+            - name: "requestTimeout"
+              value: 60
+        status_code: [200, 201]
+      when: prowlarr_proxies.json | selectattr('implementation', 'equalto', 'FlareSolverr') | list | length == 0
+
+    # ==========================================
+    # Phase 5: Configure qBittorrent Download Client
+    # ==========================================
+    - name: Check if qBittorrent already configured in Sonarr
+      uri:
+        url: "{{ api_base.sonarr }}/api/v3/downloadclient"
+        method: GET
+        headers:
+          X-Api-Key: "{{ api_keys.sonarr }}"
+        status_code: [200]
+      register: sonarr_clients
+      changed_when: false
+
+    - name: Add qBittorrent to Sonarr
+      uri:
+        url: "{{ api_base.sonarr }}/api/v3/downloadclient"
+        method: POST
+        headers:
+          X-Api-Key: "{{ api_keys.sonarr }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          enable: true
+          protocol: "torrent"
+          priority: 1
+          removeCompletedDownloads: true
+          removeFailedDownloads: true
+          name: "qBittorrent"
+          implementation: "QBittorrent"
+          implementationName: "qBittorrent"
+          configContract: "QBittorrentSettings"
+          fields:
+            - name: "host"
+              value: "qbittorrent"
+            - name: "port"
+              value: 8080
+            - name: "useSsl"
+              value: false
+            - name: "urlBase"
+              value: ""
+            - name: "username"
+              value: "{{ qbittorrent_username }}"
+            - name: "password"
+              value: "{{ qbittorrent_password }}"
+            - name: "tvCategory"
+              value: "{{ qbit_categories.sonarr }}"
+            - name: "tvImportedCategory"
+              value: ""
+            - name: "recentTvPriority"
+              value: 0
+            - name: "olderTvPriority"
+              value: 0
+            - name: "initialState"
+              value: 0
+        status_code: [200, 201]
+      when: sonarr_clients.json | selectattr('implementation', 'equalto', 'QBittorrent') | list | length == 0
+
+    - name: Check if qBittorrent already configured in Radarr
+      uri:
+        url: "{{ api_base.radarr }}/api/v3/downloadclient"
+        method: GET
+        headers:
+          X-Api-Key: "{{ api_keys.radarr }}"
+        status_code: [200]
+      register: radarr_clients
+      changed_when: false
+
+    - name: Add qBittorrent to Radarr
+      uri:
+        url: "{{ api_base.radarr }}/api/v3/downloadclient"
+        method: POST
+        headers:
+          X-Api-Key: "{{ api_keys.radarr }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          enable: true
+          protocol: "torrent"
+          priority: 1
+          removeCompletedDownloads: true
+          removeFailedDownloads: true
+          name: "qBittorrent"
+          implementation: "QBittorrent"
+          implementationName: "qBittorrent"
+          configContract: "QBittorrentSettings"
+          fields:
+            - name: "host"
+              value: "qbittorrent"
+            - name: "port"
+              value: 8080
+            - name: "useSsl"
+              value: false
+            - name: "urlBase"
+              value: ""
+            - name: "username"
+              value: "{{ qbittorrent_username }}"
+            - name: "password"
+              value: "{{ qbittorrent_password }}"
+            - name: "movieCategory"
+              value: "{{ qbit_categories.radarr }}"
+            - name: "movieImportedCategory"
+              value: ""
+            - name: "recentMoviePriority"
+              value: 0
+            - name: "olderMoviePriority"
+              value: 0
+            - name: "initialState"
+              value: 0
+        status_code: [200, 201]
+      when: radarr_clients.json | selectattr('implementation', 'equalto', 'QBittorrent') | list | length == 0
+
+    - name: Check if qBittorrent already configured in Lidarr
+      uri:
+        url: "{{ api_base.lidarr }}/api/v1/downloadclient"
+        method: GET
+        headers:
+          X-Api-Key: "{{ api_keys.lidarr }}"
+        status_code: [200]
+      register: lidarr_clients
+      changed_when: false
+
+    - name: Add qBittorrent to Lidarr
+      uri:
+        url: "{{ api_base.lidarr }}/api/v1/downloadclient"
+        method: POST
+        headers:
+          X-Api-Key: "{{ api_keys.lidarr }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          enable: true
+          protocol: "torrent"
+          priority: 1
+          removeCompletedDownloads: true
+          removeFailedDownloads: true
+          name: "qBittorrent"
+          implementation: "QBittorrent"
+          implementationName: "qBittorrent"
+          configContract: "QBittorrentSettings"
+          fields:
+            - name: "host"
+              value: "qbittorrent"
+            - name: "port"
+              value: 8080
+            - name: "useSsl"
+              value: false
+            - name: "urlBase"
+              value: ""
+            - name: "username"
+              value: "{{ qbittorrent_username }}"
+            - name: "password"
+              value: "{{ qbittorrent_password }}"
+            - name: "musicCategory"
+              value: "{{ qbit_categories.lidarr }}"
+            - name: "musicImportedCategory"
+              value: ""
+            - name: "recentMusicPriority"
+              value: 0
+            - name: "olderMusicPriority"
+              value: 0
+            - name: "initialState"
+              value: 0
+        status_code: [200, 201]
+      when: lidarr_clients.json | selectattr('implementation', 'equalto', 'QBittorrent') | list | length == 0
+
+    # ==========================================
+    # Phase 6: Configure Root Folders
+    # ==========================================
+    - name: Check if root folder already configured in Sonarr
+      uri:
+        url: "{{ api_base.sonarr }}/api/v3/rootfolder"
+        method: GET
+        headers:
+          X-Api-Key: "{{ api_keys.sonarr }}"
+        status_code: [200]
+      register: sonarr_rootfolders
+      changed_when: false
+
+    - name: Add root folder to Sonarr
+      uri:
+        url: "{{ api_base.sonarr }}/api/v3/rootfolder"
+        method: POST
+        headers:
+          X-Api-Key: "{{ api_keys.sonarr }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          path: "{{ media_paths.tv }}"
+        status_code: [200, 201]
+      when: sonarr_rootfolders.json | selectattr('path', 'equalto', media_paths.tv) | list | length == 0
+
+    - name: Check if root folder already configured in Radarr
+      uri:
+        url: "{{ api_base.radarr }}/api/v3/rootfolder"
+        method: GET
+        headers:
+          X-Api-Key: "{{ api_keys.radarr }}"
+        status_code: [200]
+      register: radarr_rootfolders
+      changed_when: false
+
+    - name: Add root folder to Radarr
+      uri:
+        url: "{{ api_base.radarr }}/api/v3/rootfolder"
+        method: POST
+        headers:
+          X-Api-Key: "{{ api_keys.radarr }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          path: "{{ media_paths.movies }}"
+        status_code: [200, 201]
+      when: radarr_rootfolders.json | selectattr('path', 'equalto', media_paths.movies) | list | length == 0
+
+    - name: Check if root folder already configured in Lidarr
+      uri:
+        url: "{{ api_base.lidarr }}/api/v1/rootfolder"
+        method: GET
+        headers:
+          X-Api-Key: "{{ api_keys.lidarr }}"
+        status_code: [200]
+      register: lidarr_rootfolders
+      changed_when: false
+
+    - name: Get Lidarr quality profiles
+      uri:
+        url: "{{ api_base.lidarr }}/api/v1/qualityprofile"
+        method: GET
+        headers:
+          X-Api-Key: "{{ api_keys.lidarr }}"
+        status_code: [200]
+      register: lidarr_quality_profiles
+      changed_when: false
+      when: lidarr_rootfolders.json | selectattr('path', 'equalto', media_paths.music) | list | length == 0
+
+    - name: Get Lidarr metadata profiles
+      uri:
+        url: "{{ api_base.lidarr }}/api/v1/metadataprofile"
+        method: GET
+        headers:
+          X-Api-Key: "{{ api_keys.lidarr }}"
+        status_code: [200]
+      register: lidarr_metadata_profiles
+      changed_when: false
+      when: lidarr_rootfolders.json | selectattr('path', 'equalto', media_paths.music) | list | length == 0
+
+    - name: Add root folder to Lidarr
+      uri:
+        url: "{{ api_base.lidarr }}/api/v1/rootfolder"
+        method: POST
+        headers:
+          X-Api-Key: "{{ api_keys.lidarr }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          path: "{{ media_paths.music }}"
+          name: "Music"
+          defaultQualityProfileId: "{{ lidarr_quality_profiles.json[0].id }}"
+          defaultMetadataProfileId: "{{ lidarr_metadata_profiles.json[0].id }}"
+        status_code: [200, 201]
+      when: lidarr_rootfolders.json | selectattr('path', 'equalto', media_paths.music) | list | length == 0
+
+    # ==========================================
+    # Phase 6a: Generate Jellyfin API Token (if needed)
+    # ==========================================
+    - name: Check if Jellyfin API token already exists
+      set_fact:
+        jellyfin_api_token_exists: "{{ jellyfin_api_token is defined and jellyfin_api_token | length > 0 }}"
+
+    - name: Authenticate with Jellyfin to get session token
+      uri:
+        url: "http://localhost:8096/Users/AuthenticateByName"
+        method: POST
+        body_format: json
+        body:
+          Username: "{{ jellyfin_admin_username }}"
+          Pw: "{{ jellyfin_admin_password }}"
+        status_code: [200]
+      register: jellyfin_auth
+      when: 
+        - not jellyfin_api_token_exists
+        - jellyfin_admin_username is defined
+        - jellyfin_admin_password is defined
+      ignore_errors: yes
+
+    - name: Create permanent API key for automation
+      uri:
+        url: "http://localhost:8096/Auth/Keys?app=Ansible-Automation"
+        method: POST
+        headers:
+          X-MediaBrowser-Token: "{{ jellyfin_auth.json.AccessToken }}"
+        status_code: [204]
+      when: 
+        - not jellyfin_api_token_exists
+        - jellyfin_auth is defined
+        - jellyfin_auth.json is defined
+      register: jellyfin_create_key
+      ignore_errors: yes
+
+    - name: Retrieve all API keys to get the new token
+      uri:
+        url: "http://localhost:8096/Auth/Keys"
+        method: GET
+        headers:
+          X-MediaBrowser-Token: "{{ jellyfin_auth.json.AccessToken }}"
+        status_code: [200]
+      register: jellyfin_keys
+      when:
+        - not jellyfin_api_token_exists
+        - jellyfin_create_key is changed
+      ignore_errors: yes
+
+    - name: Extract and store API token
+      set_fact:
+        jellyfin_api_token: "{{ (jellyfin_keys.json.Items | selectattr('AppName', 'equalto', 'Ansible-Automation') | first).AccessToken }}"
+      when:
+        - not jellyfin_api_token_exists
+        - jellyfin_keys is defined
+        - jellyfin_keys.json is defined
+        - jellyfin_keys.json.Items is defined
+      ignore_errors: yes
+
+    - name: Display API token for vault storage
+      debug:
+        msg: |
+          ========================================
+          Jellyfin API Token Generated!
+          ========================================
+          
+          Save this token to vault for future runs:
+          
+          Token: {{ jellyfin_api_token }}
+          
+          Command to add to vault:
+          ansible-vault edit inventory/secrets.yml
+          
+          Add line:
+          jellyfin_api_token: "{{ jellyfin_api_token }}"
+          ========================================
+      when: 
+        - jellyfin_api_token is defined
+        - not jellyfin_api_token_exists
+
+    # ==========================================
+    # Phase 6b: Install Jellyfin Plugins
+    # ==========================================
+    - name: Install Jellyfin plugins
+      uri:
+        url: "http://localhost:8096/Plugins/Install"
+        method: POST
+        headers:
+          X-MediaBrowser-Token: "{{ jellyfin_api_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "{{ item.name }}"
+          guid: "{{ item.guid }}"
+          version: "{{ item.version | default('latest') }}"
+        status_code: [200, 204]
+      loop: "{{ jellyfin_plugins | default([]) }}"
+      when: 
+        - jellyfin_api_token is defined
+        - jellyfin_plugins is defined
+      ignore_errors: yes
+
+    - name: Restart Jellyfin after plugin installation
+      uri:
+        url: "http://localhost:8096/System/Restart"
+        method: POST
+        headers:
+          X-MediaBrowser-Token: "{{ jellyfin_api_token }}"
+        status_code: [200, 204]
+      when: 
+        - jellyfin_api_token is defined
+        - jellyfin_plugins is defined
+        - jellyfin_plugins | length > 0
+      ignore_errors: yes
+
+    # ==========================================
+    # Phase 8: Verification
+    # ==========================================
+    - name: Verify Prowlarr applications
+      uri:
+        url: "{{ api_base.prowlarr }}/api/v1/applications"
+        method: GET
+        headers:
+          X-Api-Key: "{{ api_keys.prowlarr }}"
+        status_code: [200]
+      register: final_prowlarr_apps
+      changed_when: false
+
+    - name: Display configuration summary
+      debug:
+        msg: |
+          ========================================
+          Media-arr Configuration Complete!
+          ========================================
+          
+          ✓ API Keys Extracted: {{ api_keys.keys() | length }}
+          ✓ Prowlarr Applications: {{ final_prowlarr_apps.json | length }}
+          ✓ Media Directories Created: {{ media_paths.values() | list | length }}
+          
+          Configured Services:
+          {% for app in final_prowlarr_apps.json %}
+          - {{ app.name }}: {{ app.implementation }}
+          {% endfor %}
+          
+          Next Steps:
+          1. Add indexers to Prowlarr manually (requires site credentials)
+          2. Prowlarr will auto-sync indexers to connected apps
+          3. Download media through *arr services
+          4. Media will be saved to respective /media folders
+          
+          Access URLs:
+          - Prowlarr: https://prowlarr.{{ domain_name }}
+          - Sonarr: https://sonarr.{{ domain_name }}
+          - Radarr: https://radarr.{{ domain_name }}
+          - Lidarr: https://lidarr.{{ domain_name }}
+          - Jellyfin: https://jellyfin.{{ domain_name }}

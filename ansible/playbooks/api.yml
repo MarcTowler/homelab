@@ -9,8 +9,7 @@
     app_root: /var/www/api
     app_user: www-data
     app_group: www-data
-    php_version: "8.1"
-    domain_name: "itslit.me.uk"
+    php_version: "{{ php_config.version }}"
 
   tasks:
     - name: Load vault secrets
@@ -100,10 +99,10 @@
         line: "{{ item.line }}"
         state: present
       loop:
-        - { regexp: '^memory_limit', line: 'memory_limit = 4098M' }
-        - { regexp: '^max_execution_time', line: 'max_execution_time = 3000' }
-        - { regexp: '^upload_max_filesize', line: 'upload_max_filesize = 100M' }
-        - { regexp: '^post_max_size', line: 'post_max_size = 100M' }
+        - { regexp: '^memory_limit', line: 'memory_limit = {{ php_config.memory_limit }}' }
+        - { regexp: '^max_execution_time', line: 'max_execution_time = {{ php_config.max_execution_time }}' }
+        - { regexp: '^upload_max_filesize', line: 'upload_max_filesize = {{ php_config.upload_max_filesize }}' }
+        - { regexp: '^post_max_size', line: 'post_max_size = {{ php_config.post_max_size }}' }
       notify: reload apache2
 
     - name: Enable and start Apache

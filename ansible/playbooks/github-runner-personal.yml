@@ -55,7 +55,7 @@
 
     - name: Install Terraform
       shell: |
-        TERRAFORM_VERSION="1.14.4"
+        TERRAFORM_VERSION="{{ software_versions.terraform }}"
         TERRAFORM_URL="https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
         
         cd /tmp
