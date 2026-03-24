@@ -1,5 +1,79 @@
 ---
-# Base system variables
+# ============================================================================
+# CENTRALIZED CONFIGURATION FOR ALL HOMELAB SERVICES
+# This file serves as the single source of truth for shared configuration
+# Last Updated: 2026-03-24 (Optimization Phase 1)
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# SOFTWARE VERSIONS (Consolidated from 6 locations)
+# ----------------------------------------------------------------------------
+software_versions:
+  prometheus: "2.48.0"
+  grafana: "10.2.2"
+  traefik: "3.6.10"
+  node_exporter: "1.7.0"
+  github_runner: "2.311.0"
+  terraform: "1.14.4"
+  docker_compose: "2.24.5"
+
+# ----------------------------------------------------------------------------
+# INFRASTRUCTURE CONFIGURATION (Consolidated from 3 locations)
+# ----------------------------------------------------------------------------
+domain_name: "itslit.me.uk"
+gateway: "10.0.1.1"
+template_vm_id: 9000
+timezone: "UTC"
+
+# Proxmox Cluster Nodes (Consolidated from 3 inconsistent definitions)
+cluster_nodes:
+  - arcanine
+  - growlithe
+  - fuecoco
+  - pawmot
+  - murkrow
+
+# ----------------------------------------------------------------------------
+# SERVICE PORT MAPPING (Consolidated from traefik.yml + media-arr.yml)
+# ----------------------------------------------------------------------------
+service_ports:
+  # Web Applications
+  api: 80
+  gapi: 80
+  site: 80
+  homepage: 3000
+  
+  # Monitoring Stack
+  prometheus: 9090
+  grafana: 3000
+  node_exporter: 9100
+  
+  # Media-arr Stack
+  sonarr: 8989
+  radarr: 7878
+  lidarr: 8686
+  prowlarr: 9696
+  bazarr: 6767
+  qbittorrent: 8080
+  flaresolverr: 8191
+  jellyfin: 8096
+  
+  # Game Server
+  game_server: 8080
+
+# ----------------------------------------------------------------------------
+# PHP CONFIGURATION (Consolidated from 3 playbooks)
+# ----------------------------------------------------------------------------
+php_config:
+  version: "8.3"
+  memory_limit: "4098M"
+  max_execution_time: 3000
+  upload_max_filesize: "100M"
+  post_max_size: "100M"
+
+# ----------------------------------------------------------------------------
+# BASE SYSTEM CONFIGURATION
+# ----------------------------------------------------------------------------
 base_packages:
   - curl
   - wget
@@ -8,11 +82,7 @@ base_packages:
   - net-tools
   - vim
   - nano
-
-# API Server variables
-php_version: "8.3"
-php_ini_memory_limit: "512M"
-php_ini_max_execution_time: "300"
+  - ca-certificates
 
 # Nginx variables
 nginx_worker_processes: auto
@@ -21,10 +91,6 @@ nginx_worker_connections: 1024
 # Application paths
 app_user: www-data
 app_group: www-data
-app_root: /var/www/api
-
-# Composer configuration
-composer_global_packages: []
 
 # Security settings
 enable_firewall: true
@@ -32,8 +98,3 @@ ssh_port: 22
 
 # Monitoring (optional)
 enable_monitoring: false
-# Proxmox Cluster Nodes
-cluster_nodes:
-  - arcanine
-  - growlithe
-  - fuecoco
