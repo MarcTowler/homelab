@@ -1,0 +1,42 @@
+services:
+{% for service in media_arr_services %}
+  # {{ service.description }}
+  {{ service.name }}:
+    image: {{ service.image }}
+    container_name: {{ service.name }}
+    restart: unless-stopped
+{% if service.ports is defined %}
+    ports:
+{% for port in service.ports %}
+      - "{{ port }}"
+{% endfor %}
+{% endif %}
+    volumes:
+{% for volume in service.volumes %}
+      - {{ volume }}
+{% endfor %}
+    environment:
+{% for key, value in service.environment.items() %}
+      - {{ key }}={{ value }}
+{% endfor %}
+{% if service.command is defined %}
+    command:
+{% for cmd in service.command %}
+      - '{{ cmd }}'
+{% endfor %}
+{% endif %}
+    networks:
+      - media-network
+
+{% endfor %}
+networks:
+  media-network:
+    driver: bridge
+
+volumes:
+  media:
+    driver: local
+  config:
+    driver: local
+  downloads:
+    driver: local

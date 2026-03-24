@@ -98,3 +98,113 @@ jellyfin_plugins:
 # - name: "Anime"
 #   guid: "0417364b-5a93-4ad0-a1f0-b87569a7cf8c"
 #   description: "Enhanced anime metadata from AniDB"
+
+# Docker Compose Service Definitions
+# Add new services to this list - eliminates need to manually edit docker-compose.yml
+media_arr_services:
+  - name: sonarr
+    description: "Sonarr - TV Series Management"
+    image: "linuxserver/sonarr:latest"
+    ports:
+      - "8989:8989"
+    volumes:
+      - "/config/sonarr:/config"
+      - "/media:/media"
+      - "/downloads:/downloads"
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "UTC"
+  
+  - name: radarr
+    description: "Radarr - Movie Management"
+    image: "linuxserver/radarr:latest"
+    ports:
+      - "7878:7878"
+    volumes:
+      - "/config/radarr:/config"
+      - "/media:/media"
+      - "/downloads:/downloads"
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "UTC"
+  
+  - name: lidarr
+    description: "Lidarr - Music Management"
+    image: "linuxserver/lidarr:latest"
+    ports:
+      - "8686:8686"
+    volumes:
+      - "/config/lidarr:/config"
+      - "/media:/media"
+      - "/downloads:/downloads"
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "UTC"
+  
+  - name: prowlarr
+    description: "Prowlarr - Indexer Management"
+    image: "linuxserver/prowlarr:latest"
+    ports:
+      - "9696:9696"
+    volumes:
+      - "/config/prowlarr:/config"
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "UTC"
+  
+  - name: bazarr
+    description: "Bazarr - Subtitle Management"
+    image: "linuxserver/bazarr:latest"
+    ports:
+      - "6767:6767"
+    volumes:
+      - "/config/bazarr:/config"
+      - "/media:/media"
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "UTC"
+  
+  - name: qbittorrent
+    description: "qBittorrent - Torrent Client"
+    image: "linuxserver/qbittorrent:latest"
+    ports:
+      - "6881:6881"
+      - "6881:6881/udp"
+      - "8080:8080"
+    volumes:
+      - "/config/qbittorrent:/config"
+      - "/downloads:/downloads"
+      - "/media:/media"
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "UTC"
+      WEBUI_PORT: "8080"
+  
+  - name: flaresolverr
+    description: "FlareSolverr - CAPTCHA/CloudFlare bypass for indexers"
+    image: "flaresolverr/flaresolverr:latest"
+    ports:
+      - "8191:8191"
+    environment:
+      LOG_LEVEL: "info"
+      CAPTCHA_SOLVER: "hcaptcha"
+  
+  - name: jellyfin
+    description: "Jellyfin - Media Server (UI for watching content)"
+    image: "jellyfin/jellyfin:latest"
+    ports:
+      - "8096:8096"
+    volumes:
+      - "/config/jellyfin:/config"
+      - "/config/jellyfin/cache:/cache"
+      - "/media:/media:ro"
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "UTC"

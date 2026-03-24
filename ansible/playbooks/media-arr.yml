@@ -84,9 +84,9 @@
       when: media_stat.stat.exists
 
     # Deploy Docker Compose configuration
-    - name: Deploy docker-compose.yml
-      copy:
-        src: ../files/media-arr-docker-compose.yml
+    - name: Deploy docker-compose.yml from template
+      template:
+        src: ../templates/media-arr-docker-compose.yml.j2
         dest: "{{ media_arr_home }}/docker-compose.yml"
         owner: media-arr
         group: media-arr
