@@ -11,48 +11,21 @@
     downloads_path: "/downloads"
     media_path: "/media"
 
+  roles:
+    - role: ../roles/docker
+      vars:
+        docker_user: media-arr
+
   tasks:
     # System preparation
     - include_tasks: ../tasks/common-setup.yml
 
-    - name: Install Docker prerequisites
+    - name: Install additional packages
       apt:
         name:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - gnupg
-          - lsb-release
           - software-properties-common
           - git
         state: present
-
-    # Docker installation
-    - name: Add Docker GPG key
-      apt_key:
-        url: "https://download.docker.com/linux/ubuntu/gpg"
-        state: present
-
-    - name: Add Docker repository
-      apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-        state: present
-        filename: docker-ce
-
-    - name: Install Docker and Docker Compose
-      apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-          - docker-compose-plugin
-        state: present
-
-    - name: Enable Docker service
-      systemd:
-        name: docker
-        enabled: yes
-        state: started
 
     - name: Create media-arr user group
       group:

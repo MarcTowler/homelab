@@ -32,6 +32,11 @@
         fail_msg: "github_pat must be defined in secrets.yml for automated registration"
       when: github_runner_registrations | length > 0
 
+  roles:
+    - role: ../roles/docker
+      vars:
+        docker_user: "{{ runner_user }}"
+
   tasks:
     # System preparation
     - include_tasks: ../tasks/common-setup.yml
@@ -50,8 +55,6 @@
           - python3-dev
           - python3-pip
           - python3-venv
-          - docker.io
-          - docker-compose
         state: present
 
     - name: Install Terraform
@@ -94,12 +97,6 @@
         home: "{{ runner_home }}"
         createhome: yes
         state: present
-
-    - name: Add runner user to docker group
-      user:
-        name: "{{ runner_user }}"
-        groups: docker
-        append: yes
 
     # Create directory structure
     - name: Create runner install directory
