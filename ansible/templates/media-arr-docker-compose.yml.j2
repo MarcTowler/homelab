@@ -11,10 +11,12 @@ services:
       - "{{ port }}"
 {% endfor %}
 {% endif %}
+{% if service.volumes is defined %}
     volumes:
 {% for volume in service.volumes %}
       - {{ volume }}
 {% endfor %}
+{% endif %}
     environment:
 {% for key, value in service.environment.items() %}
       - {{ key }}={{ value }}

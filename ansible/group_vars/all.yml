@@ -65,7 +65,7 @@ service_ports:
 # PHP CONFIGURATION (Consolidated from 3 playbooks)
 # ----------------------------------------------------------------------------
 php_config:
-  version: "8.3"
+  version: "8.1"  # Using 8.1 for Ubuntu 22.04 compatibility (can upgrade to 8.3 with PPA later)
   memory_limit: "4098M"
   max_execution_time: 3000
   upload_max_filesize: "100M"

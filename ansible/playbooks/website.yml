@@ -19,3 +19,4 @@
         app_root: /var/www/Website
         repo_url: git@github.com:ItsLit-Media-and-Development/Website.git
         deploy_key: website_deploy_key
+        git_branch: Main

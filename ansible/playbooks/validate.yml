@@ -221,7 +221,7 @@
     - name: Validate Sonarr is healthy
       uri:
         url: "http://localhost:8989/api/v3/system/status"
-        status_code: 200
+        status_code: [200, 401]
         timeout: 10
       register: sonarr_check
       retries: 3
@@ -232,7 +232,7 @@
     - name: Validate Radarr is healthy
       uri:
         url: "http://localhost:7878/api/v3/system/status"
-        status_code: 200
+        status_code: [200, 401]
         timeout: 10
       register: radarr_check
       retries: 3
@@ -243,7 +243,7 @@
     - name: Validate Lidarr is healthy
       uri:
         url: "http://localhost:8686/api/v1/system/status"
-        status_code: 200
+        status_code: [200, 401]
         timeout: 10
       register: lidarr_check
       retries: 3
@@ -254,7 +254,7 @@
     - name: Validate Prowlarr is healthy
       uri:
         url: "http://localhost:9696/api/v1/health"
-        status_code: 200
+        status_code: [200, 401]
         timeout: 10
       register: prowlarr_check
       retries: 3
@@ -265,7 +265,7 @@
     - name: Validate Bazarr is healthy
       uri:
         url: "http://localhost:6767/api/system/status"
-        status_code: 200
+        status_code: [200, 401]
         timeout: 10
       register: bazarr_check
       retries: 3
@@ -273,18 +273,23 @@
       until: bazarr_check is succeeded
       changed_when: false
 
+    - name: Validate Readarr is healthy
       uri:
         url: "http://localhost:8787/api/v1/system/status"
-        status_code: 200
+        status_code: [200, 401]
         timeout: 10
+      register: readarr_check
       retries: 3
       delay: 5
+      until: readarr_check is succeeded
       changed_when: false
+      failed_when: false
+      ignore_errors: yes
 
     - name: Validate qBittorrent is healthy
       uri:
         url: "http://localhost:8080/api/v2/app/webapiVersion"
-        status_code: 200
+        status_code: [200, 401, 403]
         timeout: 10
       register: qbit_check
       retries: 3

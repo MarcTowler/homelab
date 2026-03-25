@@ -78,11 +78,16 @@
   args:
     creates: /root/.ssh/known_hosts
 
+- name: Configure git safe directory
+  command: git config --global --add safe.directory {{ app_root }}
+  changed_when: false
+  failed_when: false
+
 - name: Pull latest code from Git repository
   git:
     repo: "{{ repo_url }}"
     dest: "{{ app_root }}"
-    version: master
+    version: "{{ git_branch | default('master') }}"
     force: yes
     update: yes
     accept_hostkey: yes
