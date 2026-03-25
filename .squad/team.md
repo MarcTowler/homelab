@@ -13,6 +13,7 @@
 | Name | Role | Charter | Status |
 |------|------|---------|--------|
 
+
 ## Project Context
 
 - **Project:** homelab
