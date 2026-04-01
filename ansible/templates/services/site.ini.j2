@@ -2,6 +2,7 @@
 TOKEN = "{{ php_token}}"
 TEST_TOKEN = "{{ php_test_token}}"
 BASE_URL = "https://{{ ansible_facts['hostname'] }}.{{ domain_name }}/"
+ENV = "DEV"
 {% if ansible_facts["hostname"] == "site" %}
 API_USER = "{{ api_user }}"
 API_KEY = "{{ php_test_token}}"
