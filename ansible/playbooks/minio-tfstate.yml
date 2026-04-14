@@ -1,0 +1,127 @@
+---
+- name: Configure MinIO Terraform state backend
+  hosts: tfstate_backend
+  gather_facts: yes
+  become: yes
+
+  vars:
+    minio_user: minio
+    minio_group: minio
+    minio_data_dir: /var/lib/minio
+    minio_bin_path: /usr/local/bin/minio
+    minio_mc_bin_path: /usr/local/bin/mc
+    minio_listen_address: ":9000"
+    minio_console_address: ":9001"
+    minio_bucket_name: homelab-terraform-state
+
+  pre_tasks:
+    - name: Load vault secrets
+      include_vars:
+        file: ../inventory/secrets.yml
+
+    - name: Validate MinIO secrets are present
+      assert:
+        that:
+          - minio_root_user is defined
+          - minio_root_user | length > 0
+          - minio_root_password is defined
+          - minio_root_password | length > 0
+        fail_msg: "minio_root_user and minio_root_password must be defined in ansible/inventory/secrets.yml"
+
+  tasks:
+    - include_tasks: ../tasks/common-setup.yml
+
+    - name: Create minio group
+      group:
+        name: "{{ minio_group }}"
+        state: present
+
+    - name: Create minio user
+      user:
+        name: "{{ minio_user }}"
+        group: "{{ minio_group }}"
+        shell: /usr/sbin/nologin
+        createhome: no
+        state: present
+
+    - name: Ensure MinIO data directory exists
+      file:
+        path: "{{ minio_data_dir }}"
+        state: directory
+        owner: "{{ minio_user }}"
+        group: "{{ minio_group }}"
+        mode: "0750"
+
+    - name: Download MinIO server binary
+      get_url:
+        url: "https://dl.min.io/server/minio/release/linux-amd64/minio"
+        dest: "{{ minio_bin_path }}"
+        mode: "0755"
+
+    - name: Download MinIO client binary
+      get_url:
+        url: "https://dl.min.io/client/mc/release/linux-amd64/mc"
+        dest: "{{ minio_mc_bin_path }}"
+        mode: "0755"
+
+    - name: Install MinIO systemd service
+      copy:
+        dest: /etc/systemd/system/minio.service
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=MinIO object storage
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User={{ minio_user }}
+          Group={{ minio_group }}
+          Environment="MINIO_ROOT_USER={{ minio_root_user }}"
+          Environment="MINIO_ROOT_PASSWORD={{ minio_root_password }}"
+          ExecStart={{ minio_bin_path }} server {{ minio_data_dir }} --address {{ minio_listen_address }} --console-address {{ minio_console_address }}
+          Restart=always
+          LimitNOFILE=65536
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: restart minio
+
+    - name: Enable and start MinIO service
+      systemd:
+        name: minio
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
+    - name: Wait for MinIO API to be available
+      uri:
+        url: "http://127.0.0.1:9000/minio/health/live"
+        method: GET
+      register: minio_health
+      retries: 15
+      delay: 2
+      until: minio_health.status == 200
+
+    - name: Configure MinIO client alias
+      shell: |
+        {{ minio_mc_bin_path }} alias set local http://127.0.0.1:9000 "{{ minio_root_user }}" "{{ minio_root_password }}"
+      changed_when: false
+
+    - name: Ensure Terraform state bucket exists
+      shell: |
+        {{ minio_mc_bin_path }} mb --ignore-existing local/{{ minio_bucket_name }}
+      changed_when: false
+
+    - name: Enable versioning on Terraform state bucket
+      shell: |
+        {{ minio_mc_bin_path }} version enable local/{{ minio_bucket_name }}
+      changed_when: false
+
+  handlers:
+    - name: restart minio
+      systemd:
+        name: minio
+        state: restarted

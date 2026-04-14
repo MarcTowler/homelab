@@ -1,5 +1,5 @@
 ---
-# GitHub Actions Runner Configuration Variables (Personal Repos)
+# GitHub Actions Runner Configuration Variables (homelab Personal Repo)
 
 # Runner user and paths
 runner_user: github
@@ -29,9 +29,8 @@ node_exporter_port: 9100
 github_api_url: "https://api.github.com"
 github_pat: "{{ github_pat_personal }}"
 
-# Runner registration configuration for personal repositories
-# GitHub runners support ONE scope per runner - this one is for personal repos
-github_runner_registrations: 
+# Runner registration configuration
+github_runner_registrations:
   - type: "repo"
     value: "marctowler/homelab"
     labels: "ubuntu,docker,linux,personal,homelab"
@@ -41,6 +40,4 @@ github_runner_name: "{{ inventory_hostname }}"
 github_runner_work_dir: "{{ runner_home }}/work"
 
 # Check if runner is already registered before running registration
-# Use this flag to prevent re-registration on every playbook run
-# Set to 'false' to force re-registration: ansible-playbook playbooks/github-runner.yml -e github_runner_check_registration=false
 github_runner_check_registration: true

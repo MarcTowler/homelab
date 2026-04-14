@@ -1,0 +1,92 @@
+name: Terraform Self-Hosted
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Terraform action"
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+      runner_scope:
+        description: "Runner scope label"
+        required: true
+        type: choice
+        options:
+          - homelab
+          - litbot
+          - org
+
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  terraform:
+    runs-on:
+      - self-hosted
+      - linux
+      - docker
+      - ${{ github.event.inputs.runner_scope }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
+    env:
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Terraform version
+        run: terraform -version
+
+      - name: Create backend config
+        env:
+          MINIO_ENDPOINT: ${{ secrets.TFSTATE_MINIO_ENDPOINT }}
+          MINIO_BUCKET: ${{ secrets.TFSTATE_MINIO_BUCKET }}
+          MINIO_ACCESS_KEY: ${{ secrets.TFSTATE_MINIO_ACCESS_KEY }}
+          MINIO_SECRET_KEY: ${{ secrets.TFSTATE_MINIO_SECRET_KEY }}
+        run: |
+          MINIO_ENDPOINT_URL="${MINIO_ENDPOINT}"
+          if [[ ! "${MINIO_ENDPOINT_URL}" =~ ^https?:// ]]; then
+            MINIO_ENDPOINT_URL="http://${MINIO_ENDPOINT_URL}"
+          fi
+
+          cat > backend.hcl <<EOF
+          bucket = "${MINIO_BUCKET}"
+          key    = "env/dev/terraform.tfstate"
+          region = "main"
+          endpoint = "${MINIO_ENDPOINT_URL}"
+          use_path_style = true
+          use_lockfile = true
+          skip_credentials_validation = true
+          skip_metadata_api_check     = true
+          skip_region_validation      = true
+          skip_requesting_account_id  = true
+          access_key = "${MINIO_ACCESS_KEY}"
+          secret_key = "${MINIO_SECRET_KEY}"
+          EOF
+
+      - name: Terraform init
+        run: terraform init -reconfigure -backend-config=backend.hcl
+
+      - name: Terraform fmt check
+        run: terraform fmt -check
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        if: github.event.inputs.action == 'plan'
+        run: terraform plan -lock-timeout=5m -out=tfplan
+
+      - name: Terraform apply
+        if: github.event.inputs.action == 'apply'
+        run: terraform apply -lock-timeout=5m -auto-approve
+
+      - name: Cleanup backend config
+        if: always()
+        run: rm -f backend.hcl

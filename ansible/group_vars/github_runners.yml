@@ -3,7 +3,7 @@
 
 # Runner user and paths
 runner_user: github
-runner_group: github
+runner_linux_group: github
 runner_home: /var/lib/github-actions-runner
 runner_install_dir: /opt/actions-runner
 
@@ -37,7 +37,7 @@ github_api_url: "https://api.github.com"
 github_runner_registrations: 
   - type: "org"
     value: "ItsLit-Media-and-Development"
-    labels: "ubuntu,docker,linux,shared,dependabot"
+    labels: "ubuntu,docker,linux,shared,org,itslit-media-and-development"
 # Example (uncomment and modify for your setup):
 # github_runner_registrations:
 #   - type: "repo"
@@ -56,4 +56,3 @@ github_runner_autostart: true
 
 # Idempotency: Check if already registered before re-registering
 github_runner_check_registration: true
-

@@ -34,10 +34,17 @@ terraform.rc
 .terraform*
 tfplan
 terraform.tfvars
+# Terraform backend local config files (contain access keys/endpoints)
+backend.hcl
+*.backend.hcl
 ansible/files/*deploy_key
 ansible/.vault_pass
 # Squad: ignore runtime state (logs, inbox, sessions)
 .squad/*
+!.squad/casting/
+!.squad/casting/policy.json
+!.squad/casting/registry.json
+!.squad/casting/history.json
 .copilot/*
 .squad/orchestration-log/
 .squad/log/

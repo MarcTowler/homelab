@@ -4,16 +4,18 @@
 # Supports both personal and organization repositories
 #
 # Usage:
-#   Organization runners: ansible-playbook github-runners.yml -e "runner_group=github_runners"
-#   Personal runners:     ansible-playbook github-runners.yml -e "runner_group=github_runners_personal"
+#   Organization runner:  ansible-playbook github-runners.yml -e "runner_inventory_group=github_runners_org" -e "runner_vars_file=github_runners.yml"
+#   Homelab runner:       ansible-playbook github-runners.yml -e "runner_inventory_group=github_runners_personal_homelab" -e "runner_vars_file=github_runners_personal_homelab.yml"
+#   LitBot runner:        ansible-playbook github-runners.yml -e "runner_inventory_group=github_runners_personal_litbot" -e "runner_vars_file=github_runners_personal_litbot.yml"
 
 - name: Deploy GitHub Actions Runners
-  hosts: "{{ runner_group | default('github_runners') }}"
+  hosts: "{{ runner_inventory_group | default('github_runners_org') }}"
   gather_facts: yes
   become: yes
 
   vars:
     runner_config_file: "{{ runner_install_dir }}/.runner"
+    runner_linux_group: "{{ runner_linux_group | default('github') }}"
 
   pre_tasks:
     - name: Load vault secrets
@@ -22,7 +24,7 @@
 
     - name: Load github runner group variables
       include_vars:
-        file: "../group_vars/{{ runner_group | default('github_runners') }}.yml"
+        file: "../group_vars/{{ runner_vars_file | default('github_runners.yml') }}"
 
     - name: Validate GitHub PAT is provided for auto-registration
       assert:
@@ -86,7 +88,7 @@
         path: "{{ runner_install_dir }}"
         state: directory
         owner: "{{ runner_user }}"
-        group: "{{ runner_group }}"
+        group: "{{ runner_linux_group }}"
         mode: '0755'
 
     - name: Create runner work directory
@@ -94,7 +96,7 @@
         path: "{{ runner_home }}/work"
         state: directory
         owner: "{{ runner_user }}"
-        group: "{{ runner_group }}"
+        group: "{{ runner_linux_group }}"
         mode: '0755'
 
     # Core runtime dependencies for GitHub Actions
@@ -123,7 +125,7 @@
       file:
         path: "{{ runner_install_dir }}"
         owner: "{{ runner_user }}"
-        group: "{{ runner_group }}"
+        group: "{{ runner_linux_group }}"
         mode: '0755'
         recurse: yes
 

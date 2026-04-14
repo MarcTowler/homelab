@@ -35,6 +35,6 @@ output "container_ips" {
   description = "IP addresses of created containers"
   value = {
     for name, container in proxmox_virtual_environment_container.this :
-    name => container.ipv4.veth0
+    name => local.container_primary_ipv4[name]
   }
 }

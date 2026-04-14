@@ -15,8 +15,26 @@
 - name: Deploy monitoring exporters
   import_playbook: exporter-deployment.yml
 
-#- name: Deploy GitHub Actions runners
-#  import_playbook: github-runner.yml
+- name: Configure MinIO Terraform state backend
+  import_playbook: minio-tfstate.yml
+
+- name: Deploy organization GitHub Actions runner
+  import_playbook: github-runners.yml
+  vars:
+    runner_inventory_group: github_runners_org
+    runner_vars_file: github_runners.yml
+
+- name: Deploy homelab personal GitHub Actions runner
+  import_playbook: github-runners.yml
+  vars:
+    runner_inventory_group: github_runners_personal_homelab
+    runner_vars_file: github_runners_personal_homelab.yml
+
+- name: Deploy LitBot personal GitHub Actions runner
+  import_playbook: github-runners.yml
+  vars:
+    runner_inventory_group: github_runners_personal_litbot
+    runner_vars_file: github_runners_personal_litbot.yml
 
 - name: Configure API server
   import_playbook: api.yml

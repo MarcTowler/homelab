@@ -1,0 +1,32 @@
+# Copy this file to backend.hcl and fill in real values.
+# backend.hcl is git-ignored because it contains sensitive backend credentials.
+#
+# Initialize with:
+#   terraform init -reconfigure -backend-config=backend.hcl
+#
+# Migrate local state to MinIO backend:
+#   terraform init -migrate-state -backend-config=backend.hcl
+
+bucket = "homelab-terraform-state"
+key    = "env/dev/terraform.tfstate"
+region = "main"
+
+# MinIO endpoint (must be a full URL with scheme)
+# Replace with the tfstate-minio container IP from your inventory.
+endpoint = "http://10.0.1.210:9000"
+
+# Use path-style for MinIO/S3-compatible endpoints.
+use_path_style = true
+
+# State lock file support.
+use_lockfile = true
+
+# MinIO typically doesn't expose AWS metadata endpoints.
+skip_credentials_validation = true
+skip_metadata_api_check     = true
+skip_region_validation      = true
+skip_requesting_account_id  = true
+
+# Credentials should be placed in backend.hcl only (not committed).
+access_key = "REPLACE_ME_MINIO_ACCESS_KEY"
+secret_key = "REPLACE_ME_MINIO_SECRET_KEY"

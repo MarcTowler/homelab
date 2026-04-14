@@ -1,7 +1,8 @@
 #Set the DNS Plugin
 resource "proxmox_virtual_environment_acme_dns_plugin" "cloudflare" {
-  api    = "cf"
-  plugin = "cloudflare"
+  provider = proxmox.root_pam
+  api      = "cf"
+  plugin   = "cloudflare"
 
   data = {
     CF_Token = var.cloudflare_dns_token
@@ -9,6 +10,7 @@ resource "proxmox_virtual_environment_acme_dns_plugin" "cloudflare" {
 }
 
 resource "proxmox_virtual_environment_acme_account" "this" {
+  provider  = proxmox.root_pam
   name      = "itslit"
   contact   = var.acme_email
   directory = "https://acme-v02.api.letsencrypt.org/directory"
@@ -16,6 +18,7 @@ resource "proxmox_virtual_environment_acme_account" "this" {
 }
 
 resource "proxmox_virtual_environment_acme_certificate" "this" {
+  provider = proxmox.root_pam
   for_each = var.nodes
 
   node_name = each.value.node_name

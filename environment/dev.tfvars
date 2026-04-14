@@ -123,7 +123,7 @@ containers = {
     ]
     tags      = ["monitoring", "prometheus", "grafana", "ubuntu"]
     exporters = ["node"]
-  },  
+  },
   game-server = {
     lxc_id     = 1007
     cores      = 8
@@ -140,12 +140,12 @@ containers = {
     exporters = ["node"]
   },
   discord-bot = {
-    lxc_id       = 1008
-    cores        = 2
-    memory       = 2048
-    node         = "murkrow"
-    ip_address   = "dhcp"
-    image        = "ubuntu_2204"
+    lxc_id     = 1008
+    cores      = 2
+    memory     = 2048
+    node       = "murkrow"
+    ip_address = "dhcp"
+    image      = "ubuntu_2204"
     features = {
       nesting = true
       keyctl  = true
@@ -175,10 +175,8 @@ containers = {
     ]
     tags      = ["media", "arr-stack", "docker", "ubuntu"]
     exporters = ["node"]
-  }
-  
-  /* ,
-  github-runner = {
+  },
+  github-runner-org-01 = {
     lxc_id     = 1010
     cores      = 4
     memory     = 8192
@@ -196,10 +194,10 @@ containers = {
         path   = "/var/lib/github-runner"
       }
     ]
-    tags      = ["github-runner", "ci-cd", "ubuntu"]
+    tags      = ["github-runner", "ci-cd", "org-runner", "ubuntu"]
     exporters = ["node"]
   },
-  github-runner-personal = {
+  github-runner-homelab-01 = {
     lxc_id     = 1011
     cores      = 4
     memory     = 8192
@@ -217,9 +215,47 @@ containers = {
         path   = "/var/lib/github-runner"
       }
     ]
-    tags      = ["github-runner", "ci-cd", "ubuntu"]
+    tags      = ["github-runner", "ci-cd", "personal-runner", "homelab", "ubuntu"]
     exporters = ["node"]
-  } */
+  },
+  github-runner-litbot-01 = {
+    lxc_id     = 1012
+    cores      = 4
+    memory     = 8192
+    node       = "pawmot"
+    ip_address = "dhcp"
+    image      = "ubuntu_2204"
+    features = {
+      nesting = true
+      keyctl  = true
+    }
+    mount_points = [
+      {
+        volume = "local-lvm"
+        size   = "50G"
+        path   = "/var/lib/github-runner"
+      }
+    ]
+    tags      = ["github-runner", "ci-cd", "personal-runner", "litbot", "ubuntu"]
+    exporters = ["node"]
+  },
+  tfstate-minio = {
+    lxc_id     = 1013
+    cores      = 2
+    memory     = 4096
+    node       = "arcanine"
+    ip_address = "dhcp"
+    image      = "ubuntu_2204"
+    mount_points = [
+      {
+        volume = "local-lvm"
+        size   = "100G"
+        path   = "/var/lib/minio"
+      }
+    ]
+    tags      = ["minio", "terraform-state", "backend", "ubuntu"]
+    exporters = ["node"]
+  }
 }
 
 images = {

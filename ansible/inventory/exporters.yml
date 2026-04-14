@@ -25,6 +25,21 @@
     - "node"
     "hostname": "gapi"
     "ip": "10.0.1.38"
+  "github-runner-homelab-01":
+    "exporters":
+    - "node"
+    "hostname": "github-runner-homelab-01"
+    "ip": "10.0.1.127"
+  "github-runner-litbot-01":
+    "exporters":
+    - "node"
+    "hostname": "github-runner-litbot-01"
+    "ip": "10.0.1.41"
+  "github-runner-org-01":
+    "exporters":
+    - "node"
+    "hostname": "github-runner-org-01"
+    "ip": "10.0.1.94"
   "homepage":
     "exporters":
     - "node"
@@ -45,6 +60,11 @@
     - "node"
     "hostname": "site"
     "ip": "10.0.1.165"
+  "tfstate-minio":
+    "exporters":
+    - "node"
+    "hostname": "tfstate-minio"
+    "ip": "10.0.1.120"
   "traefik":
     "exporters":
     - "node"

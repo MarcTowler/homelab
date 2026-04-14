@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 User={{ runner_user }}
-Group={{ runner_group }}
+Group={{ runner_linux_group | default('github') }}
 WorkingDirectory={{ runner_home }}
 ExecStart={{ runner_install_dir }}/run.sh
 ExecStop={{ runner_install_dir }}/run.sh remove

@@ -12,7 +12,7 @@ resource "local_file" "ansible_inventory" {
           hosts = {
             for name, cfg in var.containers :
             name => {
-              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_host = local.container_primary_ipv4[name]
               ansible_user = "root"
             } if can(regex("api", name))
           }
@@ -21,7 +21,7 @@ resource "local_file" "ansible_inventory" {
           hosts = {
             for name, cfg in var.containers :
             name => {
-              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_host = local.container_primary_ipv4[name]
               ansible_user = "root"
             } if can(regex("db", name))
           }
@@ -30,7 +30,7 @@ resource "local_file" "ansible_inventory" {
           hosts = {
             for name, cfg in var.containers :
             name => {
-              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_host = local.container_primary_ipv4[name]
               ansible_user = "root"
             } if can(regex("monitoring", name))
           }
@@ -39,7 +39,7 @@ resource "local_file" "ansible_inventory" {
           hosts = {
             for name, cfg in var.containers :
             name => {
-              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_host = local.container_primary_ipv4[name]
               ansible_user = "root"
             } if can(regex("traefik", name))
           }
@@ -48,9 +48,45 @@ resource "local_file" "ansible_inventory" {
           hosts = {
             for name, cfg in var.containers :
             name => {
-              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_host = local.container_primary_ipv4[name]
               ansible_user = "root"
             } if can(regex("media-arr", name))
+          }
+        }
+        github_runners_org = {
+          hosts = {
+            for name, cfg in var.containers :
+            name => {
+              ansible_host = local.container_primary_ipv4[name]
+              ansible_user = "root"
+            } if can(regex("^github-runner-org-", name))
+          }
+        }
+        github_runners_personal_homelab = {
+          hosts = {
+            for name, cfg in var.containers :
+            name => {
+              ansible_host = local.container_primary_ipv4[name]
+              ansible_user = "root"
+            } if can(regex("^github-runner-homelab-", name))
+          }
+        }
+        github_runners_personal_litbot = {
+          hosts = {
+            for name, cfg in var.containers :
+            name => {
+              ansible_host = local.container_primary_ipv4[name]
+              ansible_user = "root"
+            } if can(regex("^github-runner-litbot-", name))
+          }
+        }
+        tfstate_backend = {
+          hosts = {
+            for name, cfg in var.containers :
+            name => {
+              ansible_host = local.container_primary_ipv4[name]
+              ansible_user = "root"
+            } if can(regex("^tfstate-minio$", name))
           }
         }
         proxmox_nodes = {
@@ -68,7 +104,7 @@ resource "local_file" "ansible_inventory" {
           hosts = {
             for name, cfg in var.containers :
             name => {
-              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_host = local.container_primary_ipv4[name]
               ansible_user = "root"
             } if contains(cfg.exporters, "node")
           }
@@ -77,7 +113,7 @@ resource "local_file" "ansible_inventory" {
           hosts = {
             for name, cfg in var.containers :
             name => {
-              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_host = local.container_primary_ipv4[name]
               ansible_user = "root"
             } if contains(cfg.exporters, "mysql")
           }
@@ -102,7 +138,7 @@ resource "local_file" "ansible_inventory" {
           hosts = {
             for name, cfg in var.containers :
             name => {
-              ansible_host = proxmox_virtual_environment_container.this[name].ipv4.veth0
+              ansible_host = local.container_primary_ipv4[name]
               ansible_user = "root"
             } if !can(regex("(db|api|monitoring|media-arr)", name))
           }
@@ -129,7 +165,7 @@ resource "null_resource" "ansible_provisioner" {
       # Wait for container to boot and get IP
       echo "Waiting for container ${each.key} to boot..."
       for i in {1..20}; do
-        ping_result=$(ping -c 1 ${proxmox_virtual_environment_container.this[each.key].ipv4.veth0} 2>&1)
+        ping_result=$(ping -c 1 ${local.container_primary_ipv4[each.key]} 2>&1)
         if echo "$${ping_result}" | grep -q "bytes from"; then
           echo "Container is reachable"
           break
@@ -178,7 +214,7 @@ resource "local_file" "homepage_vars" {
       for name, cfg in var.containers :
       name => {
         name = name
-        ip   = proxmox_virtual_environment_container.this[name].ipv4.veth0
+        ip   = local.container_primary_ipv4[name]
         vmid = proxmox_virtual_environment_container.this[name].vm_id
         node = proxmox_virtual_environment_container.this[name].node_name
         # Automatic Icon Selection Logic
@@ -210,7 +246,7 @@ resource "local_file" "exporters_mapping" {
       for name, cfg in var.containers :
       name => {
         hostname  = name
-        ip        = proxmox_virtual_environment_container.this[name].ipv4.veth0
+        ip        = local.container_primary_ipv4[name]
         exporters = cfg.exporters
       }
     }

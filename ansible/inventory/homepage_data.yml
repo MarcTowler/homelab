@@ -29,6 +29,24 @@
     "name": "gapi"
     "node": "arcanine"
     "vmid": 1002
+  "github-runner-homelab-01":
+    "icon": "github.png"
+    "ip": "10.0.1.127"
+    "name": "github-runner-homelab-01"
+    "node": "growlithe"
+    "vmid": 1011
+  "github-runner-litbot-01":
+    "icon": "github.png"
+    "ip": "10.0.1.41"
+    "name": "github-runner-litbot-01"
+    "node": "pawmot"
+    "vmid": 1012
+  "github-runner-org-01":
+    "icon": "github.png"
+    "ip": "10.0.1.94"
+    "name": "github-runner-org-01"
+    "node": "growlithe"
+    "vmid": 1010
   "homepage":
     "icon": "homepage.png"
     "ip": "10.0.1.180"
@@ -53,6 +71,12 @@
     "name": "site"
     "node": "growlithe"
     "vmid": 1003
+  "tfstate-minio":
+    "icon": "mdi-container"
+    "ip": "10.0.1.120"
+    "name": "tfstate-minio"
+    "node": "arcanine"
+    "vmid": 1013
   "traefik":
     "icon": "traefik.png"
     "ip": "10.0.1.123"

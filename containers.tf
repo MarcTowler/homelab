@@ -1,4 +1,5 @@
 resource "proxmox_virtual_environment_container" "this" {
+  provider    = proxmox.root_pam
   for_each    = var.containers
   description = "${each.key} - Managed by Terraform"
 
