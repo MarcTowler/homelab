@@ -33,6 +33,16 @@ jobs:
         working-directory: .
     env:
       TF_IN_AUTOMATION: "true"
+      TF_VAR_proxmox_api_url: ${{ secrets.TF_VAR_PROXMOX_API_URL }}
+      TF_VAR_proxmox_user: ${{ secrets.TF_VAR_PROXMOX_USER }}
+      TF_VAR_proxmox_api_token: ${{ secrets.TF_VAR_PROXMOX_API_TOKEN }}
+      TF_VAR_proxmox_password: ${{ secrets.TF_VAR_PROXMOX_PASSWORD }}
+      TF_VAR_terraform_password: ${{ secrets.TF_VAR_TERRAFORM_PASSWORD }}
+      TF_VAR_node: ${{ secrets.TF_VAR_NODE }}
+      TF_VAR_vm_id: ${{ secrets.TF_VAR_VM_ID }}
+      TF_VAR_domain_name: ${{ secrets.TF_VAR_DOMAIN_NAME }}
+      TF_VAR_cloudflare_dns_token: ${{ secrets.TF_VAR_CLOUDFLARE_DNS_TOKEN }}
+      TF_VAR_acme_email: ${{ secrets.TF_VAR_ACME_EMAIL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
