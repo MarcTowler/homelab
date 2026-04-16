@@ -50,6 +50,9 @@ jobs:
       - name: Terraform version
         run: terraform -version
 
+      - name: Load default tfvars for CI
+        run: cp environment/dev.tfvars ci.auto.tfvars
+
       - name: Create backend config
         env:
           MINIO_ENDPOINT: ${{ secrets.TFSTATE_MINIO_ENDPOINT }}
@@ -85,7 +88,7 @@ jobs:
           EOF
 
       - name: Terraform init
-        run: terraform init -input=false -no-color -reconfigure -backend-config=backend.hcl
+        run: terraform init -no-color -reconfigure -backend-config=backend.hcl
 
       - name: Terraform fmt check
         run: terraform fmt -check -recursive
@@ -94,7 +97,7 @@ jobs:
         run: terraform validate -no-color
 
       - name: Terraform plan
-        run: terraform plan -input=false -no-color -var-file=environment/dev.tfvars -lock-timeout=5m -out=tfplan
+        run: terraform plan -no-color -lock-timeout=5m -out=tfplan
 
       - name: Render plan summary
         run: terraform show -no-color tfplan > tfplan.txt
@@ -109,4 +112,4 @@ jobs:
 
       - name: Cleanup backend config
         if: always()
-        run: rm -f backend.hcl tfplan tfplan.txt
+        run: rm -f backend.hcl tfplan tfplan.txt ci.auto.tfvars

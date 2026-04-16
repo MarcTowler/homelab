@@ -294,13 +294,15 @@ Terraform automation now runs in two workflows:
 
 1. **Pull Request checks** (`.github/workflows/terraform-pr-check.yml`)
    - Trigger: pull requests targeting `main` that change Terraform/workflow files
-   - Runs: `terraform init`, `terraform fmt -check`, `terraform validate`, `terraform plan -var-file=environment/dev.tfvars`
+   - Runs: `terraform init`, `terraform fmt -check`, `terraform validate`, `terraform plan`
+   - Uses `environment/dev.tfvars` as default CI tfvars via `ci.auto.tfvars`
    - Uploads: `tfplan.txt` as a workflow artifact for review context
    - Merge gate: set required status check to `Terraform PR Checks / terraform-check`
 
 2. **Post-merge deploy** (`.github/workflows/terraform-deploy-main.yml`)
    - Trigger: push to `main` (including merged PRs)
-   - Runs: `terraform init`, `terraform fmt -check`, `terraform validate`, `terraform plan -var-file=environment/dev.tfvars`, `terraform apply`
+   - Runs: `terraform init`, `terraform fmt -check`, `terraform validate`, `terraform plan`, `terraform apply`
+   - Uses `environment/dev.tfvars` as default CI tfvars via `ci.auto.tfvars`
    - Applies the exact generated `tfplan` file from the same run
 
 Required repository configuration:
