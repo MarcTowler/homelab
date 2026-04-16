@@ -94,7 +94,7 @@ jobs:
         run: terraform validate -no-color
 
       - name: Terraform plan
-        run: terraform plan -input=false -no-color -lock-timeout=5m -out=tfplan
+        run: terraform plan -input=false -no-color -var-file=environment/dev.tfvars -lock-timeout=5m -out=tfplan
 
       - name: Render plan summary
         run: terraform show -no-color tfplan > tfplan.txt
