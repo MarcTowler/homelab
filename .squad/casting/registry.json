@@ -1,0 +1,60 @@
+{
+  "agents": {
+    "infrastructure-architect": {
+      "persistent_name": "Infrastructure Architect",
+      "universe": null,
+      "created_at": "2026-04-14T19:50:07.024Z",
+      "legacy_named": true,
+      "status": "active"
+    },
+    "ansible-orchestrator": {
+      "persistent_name": "Ansible Orchestrator",
+      "universe": null,
+      "created_at": "2026-04-14T19:50:07.024Z",
+      "legacy_named": true,
+      "status": "active"
+    },
+    "media-stack-engineer": {
+      "persistent_name": "Media Stack Engineer",
+      "universe": null,
+      "created_at": "2026-04-14T19:50:07.024Z",
+      "legacy_named": true,
+      "status": "active"
+    },
+    "monitoring-specialist": {
+      "persistent_name": "Monitoring Specialist",
+      "universe": null,
+      "created_at": "2026-04-14T19:50:07.024Z",
+      "legacy_named": true,
+      "status": "active"
+    },
+    "service-deployment-engineers": {
+      "persistent_name": "Service Deployment Engineers",
+      "universe": null,
+      "created_at": "2026-04-14T19:50:07.024Z",
+      "legacy_named": true,
+      "status": "active"
+    },
+    "github-actions-specialist": {
+      "persistent_name": "GitHub Actions Specialist",
+      "universe": null,
+      "created_at": "2026-04-16T22:12:06.372Z",
+      "legacy_named": true,
+      "status": "active"
+    },
+    "security-guardian": {
+      "persistent_name": "Security Guardian",
+      "universe": null,
+      "created_at": "2026-04-14T19:50:07.024Z",
+      "legacy_named": true,
+      "status": "active"
+    },
+    "scribe": {
+      "persistent_name": "Scribe",
+      "universe": null,
+      "created_at": "2026-04-14T19:50:07.024Z",
+      "legacy_named": true,
+      "status": "active"
+    }
+  }
+}

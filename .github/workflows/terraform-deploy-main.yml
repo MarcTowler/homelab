@@ -1,0 +1,93 @@
+name: Terraform Deploy Main
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.tf'
+      - 'backend.hcl.example'
+      - '.github/workflows/terraform-pr-check.yml'
+      - '.github/workflows/terraform-deploy-main.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-main-apply
+  cancel-in-progress: false
+
+jobs:
+  terraform-apply:
+    name: terraform-apply
+    runs-on:
+      - self-hosted
+      - linux
+      - docker
+      - ${{ vars.TERRAFORM_RUNNER_SCOPE || 'homelab' }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
+    env:
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Terraform version
+        run: terraform -version
+
+      - name: Create backend config
+        env:
+          MINIO_ENDPOINT: ${{ secrets.TFSTATE_MINIO_ENDPOINT }}
+          MINIO_BUCKET: ${{ secrets.TFSTATE_MINIO_BUCKET }}
+          MINIO_ACCESS_KEY: ${{ secrets.TFSTATE_MINIO_ACCESS_KEY }}
+          MINIO_SECRET_KEY: ${{ secrets.TFSTATE_MINIO_SECRET_KEY }}
+        run: |
+          for required_var in MINIO_ENDPOINT MINIO_BUCKET MINIO_ACCESS_KEY MINIO_SECRET_KEY; do
+            if [[ -z "${!required_var}" ]]; then
+              echo "::error::Missing required secret for Terraform backend: ${required_var}"
+              exit 1
+            fi
+          done
+
+          MINIO_ENDPOINT_URL="${MINIO_ENDPOINT}"
+          if [[ ! "${MINIO_ENDPOINT_URL}" =~ ^https?:// ]]; then
+            MINIO_ENDPOINT_URL="http://${MINIO_ENDPOINT_URL}"
+          fi
+
+          cat > backend.hcl <<EOF
+          bucket = "${MINIO_BUCKET}"
+          key    = "env/dev/terraform.tfstate"
+          region = "main"
+          endpoint = "${MINIO_ENDPOINT_URL}"
+          use_path_style = true
+          use_lockfile = true
+          skip_credentials_validation = true
+          skip_metadata_api_check     = true
+          skip_region_validation      = true
+          skip_requesting_account_id  = true
+          access_key = "${MINIO_ACCESS_KEY}"
+          secret_key = "${MINIO_SECRET_KEY}"
+          EOF
+
+      - name: Terraform init
+        run: terraform init -input=false -no-color -reconfigure -backend-config=backend.hcl
+
+      - name: Terraform fmt check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform validate
+        run: terraform validate -no-color
+
+      - name: Terraform plan
+        run: terraform plan -input=false -no-color -lock-timeout=5m -out=tfplan
+
+      - name: Terraform apply
+        run: terraform apply -input=false -no-color -lock-timeout=5m -auto-approve tfplan
+
+      - name: Cleanup backend config
+        if: always()
+        run: rm -f backend.hcl tfplan

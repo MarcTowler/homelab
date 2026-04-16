@@ -42,6 +42,36 @@ ansible-playbook playbooks/site.yml
 ansible-playbook playbooks/validate.yml
 ```
 
+### Remote Terraform state (MinIO on Proxmox)
+
+```bash
+# 1. Prepare backend config from template (contains MinIO endpoint and keys)
+cp backend.hcl.example backend.hcl
+
+# IMPORTANT: endpoint in backend.hcl must be a full URL (for example: http://10.0.1.120:9000)
+# For MinIO, keep `skip_requesting_account_id = true` in backend.hcl to avoid STS/IAM account checks.
+
+# 2. Initialize backend (first time)
+terraform init -reconfigure -backend-config=backend.hcl
+
+# 3. Migrate existing local state to remote MinIO backend
+terraform init -migrate-state -backend-config=backend.hcl
+```
+
+`backend.hcl` is git-ignored and must not be committed.
+
+#### MinIO backend bootstrap
+
+```bash
+# Configure MinIO on the tfstate backend container
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/minio-tfstate.yml
+```
+
+Required Vault secrets in `ansible/inventory/secrets.yml`:
+
+- `minio_root_user`
+- `minio_root_password`
+
 ### Service Access
 
 After deployment, services are immediately available:
@@ -256,6 +286,41 @@ ansible-playbook playbooks/validate.yml
 # ✓ Prometheus: Health + Target count
 # ✓ Grafana: Health + Datasource count
 # ✓ All 10 exporters: Port health + metrics
+```
+
+### Step 5: GitHub Actions Terraform Automation
+
+Terraform automation now runs in two workflows:
+
+1. **Pull Request checks** (`.github/workflows/terraform-pr-check.yml`)
+   - Trigger: pull requests targeting `main` that change Terraform/workflow files
+   - Runs: `terraform init`, `terraform fmt -check`, `terraform validate`, `terraform plan`
+   - Uploads: `tfplan.txt` as a workflow artifact for review context
+   - Merge gate: set required status check to `Terraform PR Checks / terraform-check`
+
+2. **Post-merge deploy** (`.github/workflows/terraform-deploy-main.yml`)
+   - Trigger: push to `main` (including merged PRs)
+   - Runs: `terraform init`, `terraform fmt -check`, `terraform validate`, `terraform plan`, `terraform apply`
+   - Applies the exact generated `tfplan` file from the same run
+
+Required repository configuration:
+- **Secrets:** `TFSTATE_MINIO_ENDPOINT`, `TFSTATE_MINIO_BUCKET`, `TFSTATE_MINIO_ACCESS_KEY`, `TFSTATE_MINIO_SECRET_KEY`
+- **Runner labels:** `self-hosted`, `linux`, `docker`, and a scope label (default `homelab`, override with repo variable `TERRAFORM_RUNNER_SCOPE`)
+- **Branch protection:** require the PR check above before allowing merges to `main`
+
+Example branch protection setup (requires repo admin + authenticated `gh`):
+
+```bash
+gh api \
+  --method PUT \
+  -H "Accept: application/vnd.github+json" \
+  /repos/MarcTowler/homelab/branches/main/protection \
+  -f required_status_checks.strict=true \
+  -f required_status_checks.contexts[]="Terraform PR Checks / terraform-check" \
+  -f enforce_admins=true \
+  -f required_pull_request_reviews.required_approving_review_count=1 \
+  -f required_pull_request_reviews.dismiss_stale_reviews=true \
+  -f restrictions=
 ```
 
 ---
