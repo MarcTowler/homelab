@@ -111,10 +111,14 @@ jobs:
           if [[ -n "${ANSIBLE_SSH_PRIVATE_KEY}" ]]; then
             ssh_key_file="$(mktemp)"
             chmod 600 "${ssh_key_file}"
-            printf '%s' "${ANSIBLE_SSH_PRIVATE_KEY}" > "${ssh_key_file}"
-            echo "ssh_key_file=${ssh_key_file}" >> "${GITHUB_OUTPUT}"
-            echo "cleanup=true" >> "${GITHUB_OUTPUT}"
-            exit 0
+            printf '%s\n' "${ANSIBLE_SSH_PRIVATE_KEY}" | tr -d '\r' > "${ssh_key_file}"
+            if ssh-keygen -l -f "${ssh_key_file}" >/dev/null 2>&1; then
+              echo "ssh_key_file=${ssh_key_file}" >> "${GITHUB_OUTPUT}"
+              echo "cleanup=true" >> "${GITHUB_OUTPUT}"
+              exit 0
+            fi
+            echo "::warning::ANSIBLE_SSH_PRIVATE_KEY is present but invalid; falling back to runner-local key."
+            rm -f "${ssh_key_file}"
           fi
 
           if [[ -f "${HOME}/.ssh/id_ed25519" ]]; then
@@ -142,7 +146,7 @@ jobs:
             local key_value="$2"
             if [[ -n "${key_value}" ]]; then
               local key_path="ansible/files/${key_name}"
-              printf '%s' "${key_value}" > "${key_path}"
+              printf '%s\n' "${key_value}" | tr -d '\r' > "${key_path}"
               chmod 600 "${key_path}"
             fi
           }
