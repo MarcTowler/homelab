@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - '**/*.tf'
+      - '**/*.tfvars'
       - 'backend.hcl.example'
       - '.github/workflows/terraform-pr-check.yml'
       - '.github/workflows/terraform-deploy-main.yml'
