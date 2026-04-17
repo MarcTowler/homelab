@@ -96,13 +96,13 @@ jobs:
         run: terraform fmt -check -recursive
 
       - name: Terraform validate
-        run: terraform validate -no-color
+        run: terraform validate
 
       - name: Terraform plan
         run: terraform plan -lock-timeout=5m -out=tfplan
 
       - name: Render plan summary
-        run: terraform show -no-color tfplan > tfplan.txt
+        run: terraform show tfplan > tfplan.txt
 
       - name: Upload Terraform plan artifact
         uses: actions/upload-artifact@v4
