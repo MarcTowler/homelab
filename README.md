@@ -290,27 +290,58 @@ ansible-playbook playbooks/validate.yml
 
 ### Step 5: GitHub Actions Terraform Automation
 
-Terraform automation now runs in two workflows:
+Terraform automation now runs in three workflows:
 
 1. **Pull Request checks** (`.github/workflows/terraform-pr-check.yml`)
-   - Trigger: pull requests targeting `main` that change Terraform/workflow files
-   - Runs: `terraform init`, `terraform fmt -check`, `terraform validate`, `terraform plan`
+   - Trigger: all pull requests targeting `main` (required check is always present)
+   - Runs full Terraform checks (`terraform init`, `terraform fmt -check`, `terraform validate`, `terraform plan`) only when Terraform/workflow-relevant files changed
    - Uses `environment/dev.tfvars` as default CI tfvars via `ci.auto.tfvars`
    - Uploads: `tfplan.txt` as a workflow artifact for review context
-   - Merge gate: set required status check to `Terraform PR Checks / terraform-check`
+   - Merge gate: set required status check to `terraform-check`
 
 2. **Post-merge deploy** (`.github/workflows/terraform-deploy-main.yml`)
    - Trigger: push to `main` (including merged PRs)
    - Runs: `terraform init`, `terraform fmt -check`, `terraform validate`, `terraform plan`, `terraform apply`
    - Uses `environment/dev.tfvars` as default CI tfvars via `ci.auto.tfvars`
    - Applies the exact generated `tfplan` file from the same run
+   - Prints Ansible recap counts (`ok/changed/skipped/failed`) from `terraform apply` in workflow logs
+   - Uploads: `terraform-apply.log` and `ansible-apply.log` artifacts from the apply run
+
+3. **Parameterized Ansible playbook runner** (`.github/workflows/ansible-playbook-runner.yml`)
+   - Trigger: manual (`workflow_dispatch`) or reusable call from parent workflows (`workflow_call`)
+   - Input: `playbook` selector (e.g. `api` -> `ansible/playbooks/api.yml`)
+   - Validates selector against all `ansible/playbooks/*.yml` filenames before execution
+   - Bootstraps `ansible-core` on the runner when `ansible-playbook`/`ansible-galaxy` are missing
+   - Runs selected playbook with vault support via `ANSIBLE_VAULT_PASSWORD` and SSH auth via the runner local key (`~/.ssh/id_ed25519`) or optional `ANSIBLE_SSH_PRIVATE_KEY` override
+   - Expects GitHub runner hosts to be provisioned via `ansible/playbooks/github-runners.yml`, which now installs runner private keys from vault (when provided) and distributes runner public keys to all LXC root `authorized_keys`
 
 Required repository configuration:
 - **Secrets:** `TFSTATE_MINIO_ENDPOINT`, `TFSTATE_MINIO_BUCKET`, `TFSTATE_MINIO_ACCESS_KEY`, `TFSTATE_MINIO_SECRET_KEY`
 - **Terraform input secrets:** `TF_VAR_PROXMOX_API_URL`, `TF_VAR_PROXMOX_USER`, `TF_VAR_PROXMOX_API_TOKEN`, `TF_VAR_PROXMOX_PASSWORD`, `TF_VAR_TERRAFORM_PASSWORD`, `TF_VAR_NODE`, `TF_VAR_VM_ID`, `TF_VAR_DOMAIN_NAME`, `TF_VAR_CLOUDFLARE_DNS_TOKEN`, `TF_VAR_ACME_EMAIL`, `TF_VAR_SSH_PUBLIC_KEY`
+- **Ansible secrets:** `ANSIBLE_VAULT_PASSWORD`, plus optional `ANSIBLE_SSH_PRIVATE_KEY` override (private key matching `TF_VAR_SSH_PUBLIC_KEY` so runner-initiated playbooks can SSH to LXC targets)
+- **App deploy key secrets (when running API/GAPI/Website playbooks):** `API_DEPLOY_KEY`, `GAPI_DEPLOY_KEY`, `WEBSITE_DEPLOY_KEY`
+- **Ansible vault value for runner provisioning:** `runner_ssh_private_key` in `ansible/inventory/secrets.yml` so every GitHub runner LXC is configured with the same SSH key during `github-runners.yml`
 - **SSH key consistency:** `TF_VAR_SSH_PUBLIC_KEY` must be the canonical public key expected in container initialization so CI and local plans do not drift on `user_account.keys`.
 - **Runner labels:** `self-hosted`, `linux`, `docker`, and a scope label (default `homelab`, override with repo variable `TERRAFORM_RUNNER_SCOPE`)
 - **Branch protection:** require the PR check above before allowing merges to `main`
+
+Manual run example:
+
+```bash
+# GitHub UI: Actions -> Ansible Playbook Runner -> Run workflow
+# Input playbook selector example: api
+```
+
+Parent workflow call example:
+
+```yaml
+jobs:
+  run-api-playbook:
+    uses: MarcTowler/homelab/.github/workflows/ansible-playbook-runner.yml@main
+    with:
+      playbook: api
+    secrets: inherit
+```
 
 Example branch protection setup (requires repo admin + authenticated `gh`):
 
@@ -320,9 +351,9 @@ gh api \
   -H "Accept: application/vnd.github+json" \
   /repos/MarcTowler/homelab/branches/main/protection \
   -f required_status_checks.strict=true \
-  -f required_status_checks.contexts[]="Terraform PR Checks / terraform-check" \
+  -f required_status_checks.contexts[]="terraform-check" \
   -f enforce_admins=true \
-  -f required_pull_request_reviews.required_approving_review_count=1 \
+  -f required_pull_request_reviews.required_approving_review_count=0 \
   -f required_pull_request_reviews.dismiss_stale_reviews=true \
   -f restrictions=
 ```

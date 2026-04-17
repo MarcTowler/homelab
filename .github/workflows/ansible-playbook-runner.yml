@@ -16,6 +16,14 @@ on:
     secrets:
       ANSIBLE_VAULT_PASSWORD:
         required: true
+      ANSIBLE_SSH_PRIVATE_KEY:
+        required: false
+      API_DEPLOY_KEY:
+        required: false
+      GAPI_DEPLOY_KEY:
+        required: false
+      WEBSITE_DEPLOY_KEY:
+        required: false
 
 permissions:
   contents: read
@@ -93,6 +101,68 @@ jobs:
           printf '%s' "${ANSIBLE_VAULT_PASSWORD}" > "${vault_file}"
           echo "vault_file=${vault_file}" >> "${GITHUB_OUTPUT}"
 
+      - name: Prepare SSH private key
+        id: ssh_key
+        env:
+          ANSIBLE_SSH_PRIVATE_KEY: ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${ANSIBLE_SSH_PRIVATE_KEY}" ]]; then
+            ssh_key_file="$(mktemp)"
+            chmod 600 "${ssh_key_file}"
+            printf '%s' "${ANSIBLE_SSH_PRIVATE_KEY}" > "${ssh_key_file}"
+            echo "ssh_key_file=${ssh_key_file}" >> "${GITHUB_OUTPUT}"
+            echo "cleanup=true" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          if [[ -f "${HOME}/.ssh/id_ed25519" ]]; then
+            chmod 600 "${HOME}/.ssh/id_ed25519" || true
+            echo "ssh_key_file=${HOME}/.ssh/id_ed25519" >> "${GITHUB_OUTPUT}"
+            echo "cleanup=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          echo "::error::Missing SSH authentication for Ansible targets. Set secret ANSIBLE_SSH_PRIVATE_KEY or provision a default key at ~/.ssh/id_ed25519."
+          exit 1
+
+      - name: Prepare application deploy key files
+        env:
+          API_DEPLOY_KEY: ${{ secrets.API_DEPLOY_KEY }}
+          GAPI_DEPLOY_KEY: ${{ secrets.GAPI_DEPLOY_KEY }}
+          WEBSITE_DEPLOY_KEY: ${{ secrets.WEBSITE_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p ansible/files
+
+          write_key() {
+            local key_name="$1"
+            local key_value="$2"
+            if [[ -n "${key_value}" ]]; then
+              local key_path="ansible/files/${key_name}"
+              printf '%s' "${key_value}" > "${key_path}"
+              chmod 600 "${key_path}"
+            fi
+          }
+
+          write_key "api_deploy_key" "${API_DEPLOY_KEY}"
+          write_key "gapi_deploy_key" "${GAPI_DEPLOY_KEY}"
+          write_key "website_deploy_key" "${WEBSITE_DEPLOY_KEY}"
+
+          required_deploy_key=""
+          case "${{ steps.resolve.outputs.selector }}" in
+            api) required_deploy_key="ansible/files/api_deploy_key" ;;
+            gapi) required_deploy_key="ansible/files/gapi_deploy_key" ;;
+            website) required_deploy_key="ansible/files/website_deploy_key" ;;
+          esac
+
+          if [[ -n "${required_deploy_key}" && ! -s "${required_deploy_key}" ]]; then
+            echo "::error::Missing deploy key for '${{ steps.resolve.outputs.selector }}'. Set the matching repository secret (API_DEPLOY_KEY, GAPI_DEPLOY_KEY, or WEBSITE_DEPLOY_KEY)."
+            exit 1
+          fi
+
       - name: Show selection
         run: |
           echo "Requested selector: ${{ steps.resolve.outputs.selector }}"
@@ -132,6 +202,7 @@ jobs:
       - name: Run selected playbook
         env:
           ANSIBLE_COLLECTIONS_PATHS: ${{ github.workspace }}/.ansible/collections
+          ANSIBLE_PRIVATE_KEY_FILE: ${{ steps.ssh_key.outputs.ssh_key_file }}
         run: |
           ansible-playbook \
             -i ansible/inventory/hosts.yml \
@@ -141,3 +212,7 @@ jobs:
       - name: Cleanup vault password file
         if: always()
         run: rm -f "${{ steps.vault.outputs.vault_file }}"
+
+      - name: Cleanup SSH private key file
+        if: always() && steps.ssh_key.outputs.cleanup == 'true'
+        run: rm -f "${{ steps.ssh_key.outputs.ssh_key_file }}"

@@ -8,6 +8,14 @@ Ansible playbooks and roles for configuring all services in the homelab. Include
 # Deploy everything (with automatic validation)
 ansible-playbook playbooks/site.yml
 
+# Deploy runners by dedicated scope
+ansible-playbook playbooks/github-runners.yml -e "runner_inventory_group=github_runners_org" -e "runner_vars_file=github_runners.yml"
+ansible-playbook playbooks/github-runners.yml -e "runner_inventory_group=github_runners_personal_homelab" -e "runner_vars_file=github_runners_personal_homelab.yml"
+ansible-playbook playbooks/github-runners.yml -e "runner_inventory_group=github_runners_personal_litbot" -e "runner_vars_file=github_runners_personal_litbot.yml"
+
+# Configure MinIO backend container for Terraform remote state
+ansible-playbook playbooks/minio-tfstate.yml
+
 # Validate components (health checks)
 ansible-playbook playbooks/validate.yml
 
@@ -36,7 +44,7 @@ Master playbooks for orchestration and configuration.
 
 **Execution Flow (site.yml):**
 ```
-base → php-server → mysql-server → api → gapi → homepage → monitoring → validate
+base → php-server → mysql-server → minio-tfstate → github-runner(org) → github-runner(homelab) → github-runner(litbot) → api → gapi → homepage → monitoring → validate
 ```
 
 Each playbook can run independently for targeted deployments.
@@ -62,7 +70,7 @@ inventory/
 │                        # Contains: proxmox_nodes, api_servers, mysql_servers, monitoring groups
 │
 ├── secrets.yml          # Vault-encrypted secrets
-│                        # Contains: vault_mysql_prometheus_password, api keys, etc.
+│                        # Contains: vault_mysql_prometheus_password, runner_ssh_private_key, api keys, etc.
 │                        # Edit: ansible-vault edit inventory/secrets.yml
 │
 ├── homepage_data.yml    # Static configuration for homepage service
@@ -214,6 +222,7 @@ ansible-vault decrypt filename
 
 **Required Secrets:**
 - `vault_mysql_prometheus_password` - MySQL Exporter user password
+- `runner_ssh_private_key` - SSH private key installed on GitHub runner hosts for runner-initiated Ansible SSH access
 - Any API keys or deploy credentials for services
 
 ### Using Vault in Playbooks
