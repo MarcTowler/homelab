@@ -307,7 +307,8 @@ Terraform automation now runs in two workflows:
 
 Required repository configuration:
 - **Secrets:** `TFSTATE_MINIO_ENDPOINT`, `TFSTATE_MINIO_BUCKET`, `TFSTATE_MINIO_ACCESS_KEY`, `TFSTATE_MINIO_SECRET_KEY`
-- **Terraform input secrets:** `TF_VAR_PROXMOX_API_URL`, `TF_VAR_PROXMOX_USER`, `TF_VAR_PROXMOX_API_TOKEN`, `TF_VAR_PROXMOX_PASSWORD`, `TF_VAR_TERRAFORM_PASSWORD`, `TF_VAR_NODE`, `TF_VAR_VM_ID`, `TF_VAR_DOMAIN_NAME`, `TF_VAR_CLOUDFLARE_DNS_TOKEN`, `TF_VAR_ACME_EMAIL`
+- **Terraform input secrets:** `TF_VAR_PROXMOX_API_URL`, `TF_VAR_PROXMOX_USER`, `TF_VAR_PROXMOX_API_TOKEN`, `TF_VAR_PROXMOX_PASSWORD`, `TF_VAR_TERRAFORM_PASSWORD`, `TF_VAR_NODE`, `TF_VAR_VM_ID`, `TF_VAR_DOMAIN_NAME`, `TF_VAR_CLOUDFLARE_DNS_TOKEN`, `TF_VAR_ACME_EMAIL`, `TF_VAR_SSH_PUBLIC_KEY`
+- **SSH key consistency:** `TF_VAR_SSH_PUBLIC_KEY` must be the canonical public key expected in container initialization so CI and local plans do not drift on `user_account.keys`.
 - **Runner labels:** `self-hosted`, `linux`, `docker`, and a scope label (default `homelab`, override with repo variable `TERRAFORM_RUNNER_SCOPE`)
 - **Branch protection:** require the PR check above before allowing merges to `main`
 
