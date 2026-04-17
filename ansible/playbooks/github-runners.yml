@@ -99,6 +99,31 @@
         group: "{{ runner_linux_group }}"
         mode: '0755'
 
+    - name: Create runner SSH directory
+      file:
+        path: "{{ runner_home }}/.ssh"
+        state: directory
+        owner: "{{ runner_user }}"
+        group: "{{ runner_linux_group }}"
+        mode: '0700'
+
+    - name: Generate runner SSH keypair for Ansible connectivity
+      become: yes
+      become_user: "{{ runner_user }}"
+      command: >-
+        ssh-keygen -t ed25519 -f {{ runner_home }}/.ssh/id_ed25519 -N '' -C {{ inventory_hostname }}-github-runner
+      args:
+        creates: "{{ runner_home }}/.ssh/id_ed25519"
+
+    - name: Read runner SSH public key
+      slurp:
+        src: "{{ runner_home }}/.ssh/id_ed25519.pub"
+      register: runner_ssh_pubkey_raw
+
+    - name: Store runner SSH public key for cross-host distribution
+      set_fact:
+        runner_ssh_public_key: "{{ runner_ssh_pubkey_raw.content | b64decode | trim }}"
+
     # Core runtime dependencies for GitHub Actions
     - name: Install GitHub Actions runner prerequisites
       shell: |
@@ -314,3 +339,55 @@
     - name: reload systemd
       systemd:
         daemon_reload: yes
+
+- name: Authorize GitHub runner SSH keys on LXC hosts
+  hosts: "all:!proxmox_nodes"
+  gather_facts: no
+  become: yes
+
+  vars:
+    github_runner_hosts: >-
+      {{
+        groups
+        | dict2items
+        | selectattr('key', 'match', '^github_runners')
+        | map(attribute='value')
+        | flatten
+        | unique
+      }}
+    github_runner_public_keys: >-
+      {{
+        github_runner_hosts
+        | map('extract', hostvars, 'runner_ssh_public_key')
+        | select('defined')
+        | map('trim')
+        | reject('equalto', '')
+        | unique
+        | list
+      }}
+
+  tasks:
+    - name: Ensure root SSH directory exists
+      file:
+        path: /root/.ssh
+        state: directory
+        mode: '0700'
+
+    - name: Add all GitHub runner public keys to root authorized_keys
+      lineinfile:
+        path: /root/.ssh/authorized_keys
+        create: yes
+        owner: root
+        group: root
+        mode: '0600'
+        line: "{{ item }}"
+        regexp: "^{{ item | regex_escape }}$"
+        state: present
+      loop: "{{ github_runner_public_keys }}"
+      when: github_runner_public_keys | length > 0
+
+    - name: Warn when no runner keys are available for distribution
+      debug:
+        msg: "No GitHub runner SSH public keys found to distribute in this run."
+      run_once: true
+      when: github_runner_public_keys | length == 0
