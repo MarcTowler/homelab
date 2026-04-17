@@ -99,7 +99,20 @@ jobs:
           echo "Resolved playbook: ${{ steps.resolve.outputs.playbook_path }}"
           echo "Allowed selectors: ${{ steps.resolve.outputs.allowlist }}"
 
+      - name: Install Ansible collections
+        env:
+          ANSIBLE_COLLECTIONS_PATHS: ${{ github.workspace }}/.ansible/collections
+        run: |
+          set -euo pipefail
+          if [[ ! -f "ansible/requirements.yml" ]]; then
+            echo "::error::ansible/requirements.yml not found"
+            exit 1
+          fi
+          ansible-galaxy collection install -r ansible/requirements.yml -p "${ANSIBLE_COLLECTIONS_PATHS}"
+
       - name: Run selected playbook
+        env:
+          ANSIBLE_COLLECTIONS_PATHS: ${{ github.workspace }}/.ansible/collections
         run: |
           ansible-playbook \
             -i ansible/inventory/hosts.yml \
