@@ -106,24 +106,26 @@ jobs:
           set -o pipefail
           terraform apply -lock-timeout=5m -auto-approve tfplan 2>&1 | tee terraform-apply.log
 
-      - name: Extract Ansible output from apply log
+      - name: Extract Ansible recap output from apply log
         if: always()
         run: |
           if [[ -f terraform-apply.log ]]; then
-            grep -E 'PLAY \\[|TASK \\[|PLAY RECAP|fatal:|changed=|ok=' terraform-apply.log > ansible-apply.log || true
+            awk '/ok=[0-9]+/ && /changed=[0-9]+/ && /failed=[0-9]+/ && /skipped=[0-9]+/ {print}' terraform-apply.log > ansible-apply.log || true
+            if [[ ! -s ansible-apply.log ]]; then
+              awk '/PLAY RECAP/ {print; recap=1; next} recap && /ok=[0-9]+/ {print}' terraform-apply.log > ansible-apply.log || true
+            fi
           else
             echo "terraform-apply.log not found" > ansible-apply.log
           fi
 
-      - name: Show Ansible output in workflow logs
+      - name: Show Ansible recap output in workflow logs
         if: always()
         run: |
-          echo "::group::Ansible output from terraform apply"
+          echo "::group::Ansible recap from terraform apply"
           if [[ -s ansible-apply.log ]]; then
             cat ansible-apply.log
           elif [[ -f terraform-apply.log ]]; then
-            echo "No filtered Ansible lines found. Showing full terraform apply log instead."
-            cat terraform-apply.log
+            echo "No Ansible recap lines (ok/changed/skipped/failed) were found in terraform-apply.log."
           else
             echo "No terraform apply logs were captured."
           fi
