@@ -1,0 +1,109 @@
+name: Terraform Deploy Main
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.tf'
+      - '*.tfvars'
+      - 'environment/*.tfvars'
+      - 'backend.hcl.example'
+      - '.github/workflows/terraform-pr-check.yml'
+      - '.github/workflows/terraform-deploy-main.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-main-apply
+  cancel-in-progress: false
+
+jobs:
+  terraform-apply:
+    name: terraform-apply
+    runs-on:
+      - self-hosted
+      - linux
+      - docker
+      - ${{ vars.TERRAFORM_RUNNER_SCOPE || 'homelab' }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_VAR_proxmox_api_url: ${{ secrets.TF_VAR_PROXMOX_API_URL }}
+      TF_VAR_proxmox_user: ${{ secrets.TF_VAR_PROXMOX_USER }}
+      TF_VAR_proxmox_api_token: ${{ secrets.TF_VAR_PROXMOX_API_TOKEN }}
+      TF_VAR_proxmox_password: ${{ secrets.TF_VAR_PROXMOX_PASSWORD }}
+      TF_VAR_terraform_password: ${{ secrets.TF_VAR_TERRAFORM_PASSWORD }}
+      TF_VAR_node: ${{ secrets.TF_VAR_NODE }}
+      TF_VAR_vm_id: ${{ secrets.TF_VAR_VM_ID }}
+      TF_VAR_domain_name: ${{ secrets.TF_VAR_DOMAIN_NAME }}
+      TF_VAR_cloudflare_dns_token: ${{ secrets.TF_VAR_CLOUDFLARE_DNS_TOKEN }}
+      TF_VAR_acme_email: ${{ secrets.TF_VAR_ACME_EMAIL }}
+      TF_VAR_ssh_public_key: ${{ secrets.TF_VAR_SSH_PUBLIC_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Terraform version
+        run: terraform -version
+
+      - name: Load default tfvars for CI
+        run: cp environment/dev.tfvars ci.auto.tfvars
+
+      - name: Create backend config
+        env:
+          MINIO_ENDPOINT: ${{ secrets.TFSTATE_MINIO_ENDPOINT }}
+          MINIO_BUCKET: ${{ secrets.TFSTATE_MINIO_BUCKET }}
+          MINIO_ACCESS_KEY: ${{ secrets.TFSTATE_MINIO_ACCESS_KEY }}
+          MINIO_SECRET_KEY: ${{ secrets.TFSTATE_MINIO_SECRET_KEY }}
+        run: |
+          for required_var in MINIO_ENDPOINT MINIO_BUCKET MINIO_ACCESS_KEY MINIO_SECRET_KEY; do
+            if [[ -z "${!required_var}" ]]; then
+              echo "::error::Missing required secret for Terraform backend: ${required_var}"
+              exit 1
+            fi
+          done
+
+          MINIO_ENDPOINT_URL="${MINIO_ENDPOINT}"
+          if [[ ! "${MINIO_ENDPOINT_URL}" =~ ^https?:// ]]; then
+            MINIO_ENDPOINT_URL="http://${MINIO_ENDPOINT_URL}"
+          fi
+
+          cat > backend.hcl <<EOF
+          bucket = "${MINIO_BUCKET}"
+          key    = "env/dev/terraform.tfstate"
+          region = "main"
+          endpoint = "${MINIO_ENDPOINT_URL}"
+          use_path_style = true
+          use_lockfile = true
+          skip_credentials_validation = true
+          skip_metadata_api_check     = true
+          skip_region_validation      = true
+          skip_requesting_account_id  = true
+          access_key = "${MINIO_ACCESS_KEY}"
+          secret_key = "${MINIO_SECRET_KEY}"
+          EOF
+
+      - name: Terraform init
+        run: terraform init -no-color -reconfigure -backend-config=backend.hcl
+
+      - name: Terraform fmt check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform validate
+        run: terraform validate -no-color
+
+      - name: Terraform plan
+        run: terraform plan -no-color -lock-timeout=5m -out=tfplan
+
+      - name: Terraform apply
+        run: terraform apply -no-color -lock-timeout=5m -auto-approve tfplan
+
+      - name: Cleanup backend config
+        if: always()
+        run: rm -f backend.hcl tfplan ci.auto.tfvars

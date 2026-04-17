@@ -17,6 +17,7 @@
 | Media Stack Engineer | Specialist | Media *arr stack & streaming services | Active |
 | Monitoring Specialist | Specialist | Observability, metrics, and health checks | Active |
 | Service Deployment Engineers | Collective | Application services & PHP apps | Active |
+| GitHub Actions Specialist | DevOps Specialist | GitHub Actions CI/CD automation, branch protection, and Terraform workflow governance | Active |
 | Security Guardian | Specialist | Security, secrets, and compliance | Active |
 
 ## Specializations
@@ -50,6 +51,12 @@
 - **Focus:** PHP apps (API/GAPI/Website), GitHub runners, Traefik, MySQL, homepage, game server
 - **Files:** `ansible/playbooks/{api,gapi,website,traefik,db,homepage,game-server}.yml`
 - **Doc:** `.squad/agents/service-deployment-engineers.md`
+
+### ⚙️ GitHub Actions Specialist
+- **Charter:** Own CI/CD workflow automation and Terraform pipeline reliability in GitHub Actions
+- **Focus:** Pull request quality gates, branch protection required checks, workflow reliability, deploy automation
+- **Files:** `.github/workflows/`, workflow policy docs, CI/CD runbooks
+- **Doc:** `.squad/agents/github-actions-specialist.md`
 
 ### 🔒 Security Guardian
 - **Charter:** Protect secrets, harden infrastructure, ensure compliance and security

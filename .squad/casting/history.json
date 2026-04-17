@@ -1,0 +1,36 @@
+{
+  "universe_usage_history": [],
+  "assignment_cast_snapshots": {
+    "legacy-expansion-2026-04-16T22:12:06.372Z": {
+      "assignment_id": "legacy-expansion-2026-04-16T22:12:06.372Z",
+      "created_at": "2026-04-16T22:12:06.372Z",
+      "universe": null,
+      "legacy_named": true,
+      "members": [
+        "Infrastructure Architect",
+        "Ansible Orchestrator",
+        "Media Stack Engineer",
+        "Monitoring Specialist",
+        "Service Deployment Engineers",
+        "GitHub Actions Specialist",
+        "Security Guardian",
+        "Scribe"
+      ]
+    },
+    "legacy-migration-2026-04-14T19:50:07.024Z": {
+      "assignment_id": "legacy-migration-2026-04-14T19:50:07.024Z",
+      "created_at": "2026-04-14T19:50:07.024Z",
+      "universe": null,
+      "legacy_named": true,
+      "members": [
+        "Infrastructure Architect",
+        "Ansible Orchestrator",
+        "Media Stack Engineer",
+        "Monitoring Specialist",
+        "Service Deployment Engineers",
+        "Security Guardian",
+        "Scribe"
+      ]
+    }
+  }
+}
