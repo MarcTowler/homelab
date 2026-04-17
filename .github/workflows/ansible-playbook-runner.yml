@@ -1,0 +1,111 @@
+name: Ansible Playbook Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      playbook:
+        description: "Playbook selector (basename in ansible/playbooks, e.g. api)"
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      playbook:
+        description: "Playbook selector (basename in ansible/playbooks, e.g. api)"
+        required: true
+        type: string
+    secrets:
+      ANSIBLE_VAULT_PASSWORD:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  run-playbook:
+    name: run-playbook
+    runs-on:
+      - self-hosted
+      - linux
+      - docker
+      - ${{ vars.TERRAFORM_RUNNER_SCOPE || 'homelab' }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
+    env:
+      PLAYBOOK_SELECTOR: ${{ inputs.playbook }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve and validate playbook selector
+        id: resolve
+        run: |
+          set -euo pipefail
+
+          selector="${PLAYBOOK_SELECTOR}"
+          if [[ -z "${selector}" ]]; then
+            echo "::error::Missing required input: playbook"
+            exit 1
+          fi
+
+          if [[ "${selector}" =~ [^a-zA-Z0-9._-] ]]; then
+            echo "::error::Invalid playbook selector '${selector}'. Allowed characters: letters, numbers, '.', '_' and '-'."
+            exit 1
+          fi
+
+          mapfile -t allowed < <(find ansible/playbooks -maxdepth 1 -type f -name '*.yml' -printf '%f\n' | sed 's/\.yml$//' | sort)
+          if [[ ${#allowed[@]} -eq 0 ]]; then
+            echo "::error::No playbooks found in ansible/playbooks/"
+            exit 1
+          fi
+
+          if ! printf '%s\n' "${allowed[@]}" | grep -Fxq "${selector}"; then
+            echo "::error::Unsupported playbook selector '${selector}'."
+            echo "Allowed selectors: $(IFS=,; echo "${allowed[*]}")"
+            exit 1
+          fi
+
+          resolved_path="ansible/playbooks/${selector}.yml"
+          if [[ ! -f "${resolved_path}" ]]; then
+            echo "::error::Resolved playbook path not found: ${resolved_path}"
+            exit 1
+          fi
+
+          echo "selector=${selector}" >> "${GITHUB_OUTPUT}"
+          echo "playbook_path=${resolved_path}" >> "${GITHUB_OUTPUT}"
+          echo "allowlist=$(IFS=,; echo "${allowed[*]}")" >> "${GITHUB_OUTPUT}"
+
+      - name: Prepare vault password file
+        id: vault
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${ANSIBLE_VAULT_PASSWORD}" ]]; then
+            echo "::error::Missing required secret: ANSIBLE_VAULT_PASSWORD"
+            exit 1
+          fi
+
+          vault_file="$(mktemp)"
+          chmod 600 "${vault_file}"
+          printf '%s' "${ANSIBLE_VAULT_PASSWORD}" > "${vault_file}"
+          echo "vault_file=${vault_file}" >> "${GITHUB_OUTPUT}"
+
+      - name: Show selection
+        run: |
+          echo "Requested selector: ${{ steps.resolve.outputs.selector }}"
+          echo "Resolved playbook: ${{ steps.resolve.outputs.playbook_path }}"
+          echo "Allowed selectors: ${{ steps.resolve.outputs.allowlist }}"
+
+      - name: Run selected playbook
+        run: |
+          ansible-playbook \
+            -i ansible/inventory/hosts.yml \
+            "${{ steps.resolve.outputs.playbook_path }}" \
+            --vault-password-file "${{ steps.vault.outputs.vault_file }}"
+
+      - name: Cleanup vault password file
+        if: always()
+        run: rm -f "${{ steps.vault.outputs.vault_file }}"
