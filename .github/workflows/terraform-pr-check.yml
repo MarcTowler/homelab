@@ -4,12 +4,6 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - '**/*.tf'
-      - '**/*.tfvars'
-      - 'backend.hcl.example'
-      - '.github/workflows/terraform-pr-check.yml'
-      - '.github/workflows/terraform-deploy-main.yml'
   workflow_dispatch:
 
 permissions:
@@ -48,14 +42,58 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect relevant changes
+        id: changes
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "run_terraform=true" >> "${GITHUB_OUTPUT}"
+            echo "reason=manual_dispatch" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          head_sha="${{ github.event.pull_request.head.sha }}"
+          changed_files="$(git diff --name-only "${base_sha}" "${head_sha}")"
+
+          echo "Changed files:"
+          printf '%s\n' "${changed_files}"
+
+          should_run="false"
+          while IFS= read -r file; do
+            case "${file}" in
+              *.tf|*.tfvars|backend.hcl.example|environment/*.tfvars|.github/workflows/*.yml)
+                should_run="true"
+                break
+                ;;
+            esac
+          done <<< "${changed_files}"
+
+          echo "run_terraform=${should_run}" >> "${GITHUB_OUTPUT}"
+          if [[ "${should_run}" == "true" ]]; then
+            echo "reason=relevant_changes" >> "${GITHUB_OUTPUT}"
+          else
+            echo "reason=non_terraform_pr" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Skip heavy Terraform checks when not needed
+        if: steps.changes.outputs.run_terraform != 'true'
+        run: echo "No Terraform/workflow changes detected. Marking terraform-check as passed."
 
       - name: Terraform version
+        if: steps.changes.outputs.run_terraform == 'true'
         run: terraform -version
 
       - name: Load default tfvars for CI
+        if: steps.changes.outputs.run_terraform == 'true'
         run: cp environment/dev.tfvars ci.auto.tfvars
 
       - name: Create backend config
+        if: steps.changes.outputs.run_terraform == 'true'
         env:
           MINIO_ENDPOINT: ${{ secrets.TFSTATE_MINIO_ENDPOINT }}
           MINIO_BUCKET: ${{ secrets.TFSTATE_MINIO_BUCKET }}
@@ -90,21 +128,27 @@ jobs:
           EOF
 
       - name: Terraform init
+        if: steps.changes.outputs.run_terraform == 'true'
         run: terraform init -no-color -reconfigure -backend-config=backend.hcl
 
       - name: Terraform fmt check
+        if: steps.changes.outputs.run_terraform == 'true'
         run: terraform fmt -check -recursive
 
       - name: Terraform validate
+        if: steps.changes.outputs.run_terraform == 'true'
         run: terraform validate
 
       - name: Terraform plan
+        if: steps.changes.outputs.run_terraform == 'true'
         run: terraform plan -lock-timeout=5m -out=tfplan
 
       - name: Render plan summary
+        if: steps.changes.outputs.run_terraform == 'true'
         run: terraform show tfplan > tfplan.txt
 
       - name: Upload Terraform plan artifact
+        if: steps.changes.outputs.run_terraform == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: terraform-plan-pr-${{ github.event.pull_request.number || github.run_number }}
