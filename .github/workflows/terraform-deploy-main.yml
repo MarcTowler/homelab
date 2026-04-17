@@ -102,8 +102,44 @@ jobs:
         run: terraform plan -no-color -lock-timeout=5m -out=tfplan
 
       - name: Terraform apply
-        run: terraform apply -no-color -lock-timeout=5m -auto-approve tfplan
+        run: |
+          set -o pipefail
+          terraform apply -lock-timeout=5m -auto-approve tfplan 2>&1 | tee terraform-apply.log
+
+      - name: Extract Ansible output from apply log
+        if: always()
+        run: |
+          if [[ -f terraform-apply.log ]]; then
+            grep -E 'PLAY \\[|TASK \\[|PLAY RECAP|fatal:|changed=|ok=' terraform-apply.log > ansible-apply.log || true
+          else
+            echo "terraform-apply.log not found" > ansible-apply.log
+          fi
+
+      - name: Show Ansible output in workflow logs
+        if: always()
+        run: |
+          echo "::group::Ansible output from terraform apply"
+          if [[ -s ansible-apply.log ]]; then
+            cat ansible-apply.log
+          elif [[ -f terraform-apply.log ]]; then
+            echo "No filtered Ansible lines found. Showing full terraform apply log instead."
+            cat terraform-apply.log
+          else
+            echo "No terraform apply logs were captured."
+          fi
+          echo "::endgroup::"
+
+      - name: Upload apply logs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-apply-logs-${{ github.run_number }}
+          path: |
+            terraform-apply.log
+            ansible-apply.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Cleanup backend config
         if: always()
-        run: rm -f backend.hcl tfplan ci.auto.tfvars
+        run: rm -f backend.hcl tfplan ci.auto.tfvars terraform-apply.log ansible-apply.log
