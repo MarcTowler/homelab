@@ -87,7 +87,7 @@
   git:
     repo: "{{ repo_url }}"
     dest: "{{ app_root }}"
-    version: "{{ git_branch | default('master') }}"
+    version: "{{ git_branch | default('main') }}"
     force: yes
     update: yes
     accept_hostkey: yes
