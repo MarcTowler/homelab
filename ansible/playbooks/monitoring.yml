@@ -198,6 +198,24 @@
         mode: '0644'
       notify: restart grafana
 
+    - name: Download Fitbit dashboard for InfluxDB v1
+      get_url:
+        url: "https://raw.githubusercontent.com/arpanghosh8453/fitbit-grafana/main/Grafana_Dashboard/Health%20Stats%20Dashboard%20for%20influxdb-v1.json"
+        dest: "{{ grafana_data_dir }}/provisioning/dashboards/fitbit-health.json"
+        owner: "{{ grafana_user }}"
+        group: "{{ grafana_user }}"
+        mode: '0644'
+      when: "'fitbit' in hostvars"
+      notify: restart grafana
+
+    - name: Bind Fitbit dashboard datasource UID
+      replace:
+        path: "{{ grafana_data_dir }}/provisioning/dashboards/fitbit-health.json"
+        regexp: "\\$\\{DS_HEALTH_STATS\\}"
+        replace: "fitbit_health_stats"
+      when: "'fitbit' in hostvars"
+      notify: restart grafana
+
     - name: Create Grafana systemd service
       template:
         src: ../templates/monitoring/grafana.service.j2

@@ -53,6 +53,15 @@ resource "local_file" "ansible_inventory" {
             } if can(regex("media-arr", name))
           }
         }
+        fitbit = {
+          hosts = {
+            for name, cfg in var.containers :
+            name => {
+              ansible_host = local.container_primary_ipv4[name]
+              ansible_user = "root"
+            } if can(regex("^fitbit$", name))
+          }
+        }
         github_runners_org = {
           hosts = {
             for name, cfg in var.containers :
@@ -140,7 +149,7 @@ resource "local_file" "ansible_inventory" {
             name => {
               ansible_host = local.container_primary_ipv4[name]
               ansible_user = "root"
-            } if !can(regex("(db|api|monitoring|media-arr)", name))
+            } if !can(regex("(db|api|monitoring|media-arr|fitbit)", name))
           }
         }
       }
@@ -227,6 +236,7 @@ resource "local_file" "homepage_vars" {
           can(regex("traefik", name)) ? "traefik.png" :
           can(regex("homepage", name)) ? "homepage.png" :
           can(regex("monitoring", name)) ? "grafana.png" :
+          can(regex("fitbit", name)) ? "grafana.png" :
           can(regex("github", name)) ? "github.png" :
           can(regex("game-server", name)) ? "amp.png" :
           can(regex("minecraft", name)) ? "minecraft.png" :

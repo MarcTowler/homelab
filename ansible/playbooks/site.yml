@@ -57,6 +57,9 @@
 - name: Configure media-arr stack
   import_playbook: media-arr-configure.yml
   
+- name: Deploy Fitbit health collector stack
+  import_playbook: fitbit.yml
+
 - name: Configure monitoring stack
   import_playbook: monitoring.yml
 

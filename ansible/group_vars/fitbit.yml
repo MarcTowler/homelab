@@ -1,0 +1,20 @@
+---
+# Fitbit stack configuration
+fitbit_stack_home: /opt/fitbit-grafana
+fitbit_stack_user: fitbit
+fitbit_stack_group: fitbit
+fitbit_compose_project: fitbit
+
+fitbit_influxdb_version: "1.11"
+fitbit_influxdb_database: "FitbitHealthStats"
+fitbit_influxdb_username: "{{ vault_fitbit_influx_username | default('fitbit_user') }}"
+fitbit_influxdb_password: "{{ vault_fitbit_influx_password | default('fitbit_password') }}"
+fitbit_influxdb_port: 8086
+
+fitbit_api_provider: "google"
+fitbit_google_client_id: "{{ vault_fitbit_google_client_id | default('') }}"
+fitbit_google_client_secret: "{{ vault_fitbit_google_client_secret | default('') }}"
+fitbit_device_name: "{{ vault_fitbit_device_name | default('Charge6') }}"
+fitbit_local_timezone: "Automatic"
+fitbit_log_level: "INFO"
+fitbit_auto_date_range: true

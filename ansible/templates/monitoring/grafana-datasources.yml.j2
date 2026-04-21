@@ -26,3 +26,19 @@ datasources:
       maxIdleConns: 100
       connMaxLifetime: 14400
       logErrors: true
+
+{% if 'fitbit' in hostvars %}
+  # Fitbit InfluxDB Data Source
+  - name: Fitbit Health
+    uid: fitbit_health_stats
+    type: influxdb
+    access: proxy
+    database: "{{ fitbit_influxdb_database | default('FitbitHealthStats') }}"
+    user: "{{ fitbit_influxdb_username | default('fitbit_user') }}"
+    password: "{{ fitbit_influxdb_password | default('fitbit_password') }}"
+    url: "http://{{ hostvars['fitbit']['ansible_host'] }}:{{ fitbit_influxdb_port | default(8086) }}"
+    isDefault: false
+    editable: true
+    jsonData:
+      httpMode: GET
+{% endif %}

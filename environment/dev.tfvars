@@ -255,6 +255,21 @@ containers = {
     ]
     tags      = ["minio", "terraform-state", "backend", "ubuntu"]
     exporters = ["node"]
+  },
+  fitbit = {
+    lxc_id     = 1014
+    cores      = 2
+    memory     = 4096
+    disk_size  = 30
+    node       = "growlithe"
+    ip_address = "dhcp"
+    image      = "ubuntu_2204"
+    features = {
+      nesting = true
+      keyctl  = true
+    }
+    tags      = ["fitbit", "health", "docker", "influxdb", "ubuntu"]
+    exporters = ["node"]
   }
 }
 
