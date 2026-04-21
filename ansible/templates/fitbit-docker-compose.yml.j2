@@ -1,0 +1,42 @@
+services:
+  fitbit-fetch-data:
+    restart: unless-stopped
+    image: thisisarpanghosh/fitbit-fetch-data:latest
+    container_name: fitbit-fetch-data
+    volumes:
+      - "{{ fitbit_stack_home }}/logs:/app/logs"
+      - "{{ fitbit_stack_home }}/tokens:/app/tokens"
+      - /etc/timezone:/etc/timezone:ro
+    environment:
+      - FITBIT_LOG_FILE_PATH=/app/logs/fitbit.log
+      - TOKEN_FILE_PATH=/app/tokens/fitbit.token
+      - LOG_LEVEL={{ fitbit_log_level }}
+      - HEALTH_API_PROVIDER={{ fitbit_api_provider }}
+      - AUTO_DATE_RANGE={{ fitbit_auto_date_range | ternary('True', 'False') }}
+      - INFLUXDB_VERSION=1
+      - INFLUXDB_HOST=influxdb
+      - INFLUXDB_PORT={{ fitbit_influxdb_port }}
+      - INFLUXDB_USERNAME={{ fitbit_influxdb_username }}
+      - INFLUXDB_PASSWORD={{ fitbit_influxdb_password }}
+      - INFLUXDB_DATABASE={{ fitbit_influxdb_database }}
+      - GOOGLE_CLIENT_ID={{ fitbit_google_client_id }}
+      - GOOGLE_CLIENT_SECRET={{ fitbit_google_client_secret }}
+      - DEVICENAME={{ fitbit_device_name }}
+      - LOCAL_TIMEZONE={{ fitbit_local_timezone }}
+    depends_on:
+      - influxdb
+
+  influxdb:
+    restart: unless-stopped
+    container_name: influxdb
+    hostname: influxdb
+    image: "influxdb:{{ fitbit_influxdb_version }}"
+    environment:
+      - INFLUXDB_DB={{ fitbit_influxdb_database }}
+      - INFLUXDB_USER={{ fitbit_influxdb_username }}
+      - INFLUXDB_USER_PASSWORD={{ fitbit_influxdb_password }}
+      - INFLUXDB_DATA_INDEX_VERSION=tsi1
+    ports:
+      - "{{ fitbit_influxdb_port }}:8086"
+    volumes:
+      - "{{ fitbit_stack_home }}/influxdb:/var/lib/influxdb"

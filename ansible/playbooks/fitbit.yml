@@ -1,0 +1,92 @@
+---
+- name: Deploy Fitbit collector stack
+  hosts: fitbit
+  gather_facts: yes
+  become: yes
+
+  vars_files:
+    - ../inventory/secrets.yml
+
+  roles:
+    - role: ../roles/docker
+      vars:
+        docker_user: "{{ fitbit_stack_user }}"
+
+  tasks:
+    - include_tasks: ../tasks/common-setup.yml
+
+    - name: Create Fitbit group
+      group:
+        name: "{{ fitbit_stack_group }}"
+        state: present
+
+    - name: Create Fitbit user
+      user:
+        name: "{{ fitbit_stack_user }}"
+        group: "{{ fitbit_stack_group }}"
+        home: "{{ fitbit_stack_home }}"
+        shell: /bin/bash
+        createhome: yes
+        state: present
+
+    - name: Create Fitbit stack directories
+      file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ fitbit_stack_home }}", owner: "{{ fitbit_stack_user }}", group: "{{ fitbit_stack_group }}", mode: "0755" }
+        - { path: "{{ fitbit_stack_home }}/logs", owner: "1000", group: "1000", mode: "0755" }
+        - { path: "{{ fitbit_stack_home }}/tokens", owner: "1000", group: "1000", mode: "0755" }
+        - { path: "{{ fitbit_stack_home }}/influxdb", owner: "1500", group: "1500", mode: "0755" }
+
+    - name: Deploy Fitbit docker-compose file
+      template:
+        src: ../templates/fitbit-docker-compose.yml.j2
+        dest: "{{ fitbit_stack_home }}/docker-compose.yml"
+        owner: "{{ fitbit_stack_user }}"
+        group: "{{ fitbit_stack_group }}"
+        mode: "0644"
+
+    - name: Start Fitbit InfluxDB backend
+      shell: |
+        cd {{ fitbit_stack_home }}
+        docker compose up -d influxdb
+      args:
+        executable: /bin/bash
+
+    - name: Check if Fitbit token bootstrap file exists
+      stat:
+        path: "{{ fitbit_stack_home }}/tokens/fitbit.token"
+      register: fitbit_token_file
+
+    - name: Start Fitbit fetch container when token file is present
+      shell: |
+        cd {{ fitbit_stack_home }}
+        docker compose up -d fitbit-fetch-data
+      args:
+        executable: /bin/bash
+      when: fitbit_token_file.stat.exists
+
+    - name: Print manual bootstrap command when token file is missing
+      debug:
+        msg: |
+          Fitbit token bootstrap is pending.
+          1. SSH to fitbit host
+          2. cd {{ fitbit_stack_home }}
+          3. docker compose run --rm fitbit-fetch-data
+          4. Paste refresh token when prompted
+          5. docker compose up -d
+      when: not fitbit_token_file.stat.exists
+
+    - name: Verify InfluxDB API is reachable
+      uri:
+        url: "http://localhost:{{ fitbit_influxdb_port }}/ping"
+        status_code: [200, 204]
+      register: fitbit_influx_health
+      retries: 5
+      delay: 3
+      until: fitbit_influx_health.status in [200, 204]
+      changed_when: false

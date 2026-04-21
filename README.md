@@ -9,6 +9,7 @@ Complete infrastructure-as-code for a home lab environment using Terraform and A
 - [Architecture](#architecture)
 - [Deployment](#deployment)
 - [Service Access](#service-access)
+- [Fitbit Health Stack](#fitbit-health-stack-google-health-api)
 - [Validation & Monitoring](#validation--monitoring)
 - [Troubleshooting](#troubleshooting)
 - [File Reference](#file-reference)
@@ -81,6 +82,51 @@ After deployment, services are immediately available:
 | **Grafana** | http://10.0.1.132:3000 | admin / 690Aburn79! | 3000 |
 | **Prometheus** | http://10.0.1.132:9090 | - | 9090 |
 | **Homelab Dashboard** | http://10.0.1.132:3000/d/homelab-overview | - | 3000 |
+
+### Fitbit health stack (Google Health API)
+
+This repo now supports a dedicated `fitbit` LXC that runs:
+- `fitbit-fetch-data` (collector)
+- `influxdb` (Fitbit data store)
+
+The existing `monitoring` Grafana is the primary visualization layer. It provisions:
+- `Fitbit Health` datasource (InfluxDB on fitbit host)
+- Fitbit dashboard JSON from upstream project (`Health Stats Dashboard for influxdb-v1`)
+
+#### Required vault values
+
+Add these values to `ansible/inventory/secrets.yml` (vault-encrypted):
+- `vault_fitbit_google_client_id`
+- `vault_fitbit_google_client_secret`
+- `vault_fitbit_influx_username` (or use default `fitbit_user`)
+- `vault_fitbit_influx_password` (or use default `fitbit_password`)
+- optional: `vault_fitbit_device_name`
+
+#### Deployment flow
+
+```bash
+# 1. Provision fitbit LXC from Terraform config
+terraform plan -out=tfplan
+terraform apply tfplan
+
+# 2. Deploy Fitbit stack onto fitbit host
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/fitbit.yml
+
+# 3. Bootstrap refresh token interactively (first run only)
+ssh root@fitbit.itslit.me.uk
+cd /opt/fitbit-grafana
+docker compose run --rm fitbit-fetch-data
+# paste refresh token when prompted, then:
+docker compose up -d
+
+# 4. Re-apply monitoring for datasource + dashboard provisioning
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/monitoring.yml
+```
+
+#### Access path
+
+- Open existing Grafana (`http://10.0.1.132:3000`)
+- Use the `Fitbit Health` datasource/dashboard in the Homelab folder
 
 ---
 
