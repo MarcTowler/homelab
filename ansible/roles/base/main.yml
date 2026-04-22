@@ -58,7 +58,7 @@
         name: "{{ inventory_hostname }}"
 
     - name: Configure timezone to UTC
-      timezone:
+      community.general.timezone:
         name: UTC
 
     - name: Ensure systemd-resolved is configured
