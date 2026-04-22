@@ -20,7 +20,7 @@
     - name: Create deploy key file
       copy:
         content: "{{ litbot_deploy_key }}"
-        dest: "../files/litbot_deploy_key"
+        dest: "{{ playbook_dir }}/../files/litbot_deploy_key"
 
     # System preparation
     - include_tasks: ../tasks/common-setup.yml
@@ -85,7 +85,7 @@
 
     - name: Copy GitHub Deploy Key
       copy:
-        src: "../files/litbot_deploy_key"
+        src: "{{ playbook_dir }}/../files/litbot_deploy_key"
         dest: "/root/.ssh/litbot_deploy_key"
         mode: '0600'
 
