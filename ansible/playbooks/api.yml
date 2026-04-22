@@ -11,6 +11,10 @@
     - name: Load vault secrets
       include_vars:
         file: ../inventory/secrets.yml
+    
+    - name: Debug - check if vault secret loaded
+      debug:
+        msg: "api_deploy_key length: {{ api_deploy_key | length }}"
 
   tasks:
     - name: Ensure role files directory exists
@@ -24,6 +28,15 @@
         content: "{{ api_deploy_key }}"
         dest: "{{ role_files_dir }}/api_deploy_key"
         mode: '0600'
+    
+    - name: Verify deploy key file was created
+      stat:
+        path: "{{ role_files_dir }}/api_deploy_key"
+      register: deploy_key_stat
+    
+    - name: Show deploy key file info
+      debug:
+        msg: "Deploy key exists: {{ deploy_key_stat.stat.exists }}, size: {{ deploy_key_stat.stat.size }} bytes"
 
 - name: Deploy API Server
   hosts: api
