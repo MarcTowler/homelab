@@ -68,7 +68,7 @@
 
 - name: Deploy SSH key for git
   copy:
-    src: "../../files/{{ deploy_key }}"
+    content: "{{ deploy_key_content }}"
     dest: "/root/.ssh/{{ deploy_key }}"
     mode: '0600'
 

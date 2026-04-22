@@ -11,10 +11,6 @@
     - name: Load vault secrets
       include_vars:
         file: ../inventory/secrets.yml
-    - name: Create deploy key file
-      copy:
-        content: "{{ website_deploy_key }}"
-        dest: "{{ playbook_dir }}/../files/website_deploy_key"
 
   roles:
     - role: php-app
@@ -23,4 +19,5 @@
         app_root: /var/www/Website
         repo_url: git@github.com:ItsLit-Media-and-Development/Website.git
         deploy_key: website_deploy_key
+        deploy_key_content: "{{ website_deploy_key }}"
         git_branch: Dev

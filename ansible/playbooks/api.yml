@@ -11,16 +11,6 @@
     - name: Load vault secrets
       include_vars:
         file: ../inventory/secrets.yml
-    - name: Ensure files directory exists
-      file:
-        path: "{{ playbook_dir }}/../files"
-        state: directory
-        mode: '0755'
-    - name: Create deploy key file
-      copy:
-        content: "{{ api_deploy_key }}"
-        dest: "{{ playbook_dir }}/../files/api_deploy_key"
-        mode: '0600'
 
   roles:
     - role: php-app
@@ -29,3 +19,4 @@
         app_root: /var/www/api
         repo_url: git@github.com:ItsLit-Media-and-Development/api.git
         deploy_key: api_deploy_key
+        deploy_key_content: "{{ api_deploy_key }}"
