@@ -17,6 +17,10 @@
     - name: Load vault secrets
       include_vars:
         file: ../inventory/secrets.yml
+    - name: Create deploy key file
+      copy:
+        content: "{{ litbot_deploy_key }}"
+        dest: "../files/{{ deploy_key }}"
 
     # System preparation
     - include_tasks: ../tasks/common-setup.yml

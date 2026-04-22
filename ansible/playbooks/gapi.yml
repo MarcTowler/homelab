@@ -11,6 +11,10 @@
     - name: Load vault secrets
       include_vars:
         file: ../inventory/secrets.yml
+    - name: Create deploy key file
+      copy:
+        content: "{{ gapi_deploy_key }}"
+        dest: "../files/{{ deploy_key }}"
 
   roles:
     - role: php-app
