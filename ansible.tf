@@ -199,9 +199,8 @@ resource "null_resource" "run_ansible" {
   }
 
   provisioner "local-exec" {
-    command     = "ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/site.yml"
+    command     = "set -o pipefail; ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/site.yml"
     working_dir = path.module
-    on_failure  = continue
 
     environment = {
       # This points Ansible to a password file or you can use 
