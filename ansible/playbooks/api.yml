@@ -3,29 +3,6 @@
 # Reduced from 134 lines to 24 lines using centralized role
 
 - name: Deploy API Server
-  hosts: localhost
-  gather_facts: no
-  vars:
-    deploy_key_path: "{{ playbook_dir }}/../roles/php-app/files/api_deploy_key"
-
-  pre_tasks:
-    - name: Load vault secrets
-      include_vars:
-        file: ../inventory/secrets.yml
-    
-    - name: Ensure role files directory exists
-      file:
-        path: "{{ playbook_dir }}/../roles/php-app/files"
-        state: directory
-        mode: '0755'
-    
-    - name: Create deploy key file in role directory
-      copy:
-        content: "{{ api_deploy_key }}"
-        dest: "{{ deploy_key_path }}"
-        mode: '0600'
-
-- name: Deploy API Server
   hosts: api
   gather_facts: yes
   become: yes
