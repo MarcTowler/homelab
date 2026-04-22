@@ -14,7 +14,7 @@
     - name: Create deploy key file
       copy:
         content: "{{ website_deploy_key }}"
-        dest: "../files/website_deploy_key"
+        dest: "{{ playbook_dir }}/../files/website_deploy_key"
 
   roles:
     - role: php-app

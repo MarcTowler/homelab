@@ -14,7 +14,7 @@
     - name: Create deploy key file
       copy:
         content: "{{ gapi_deploy_key }}"
-        dest: "../files/gapi_deploy_key"
+        dest: "{{ playbook_dir }}/../files/gapi_deploy_key"
 
   roles:
     - role: php-app
