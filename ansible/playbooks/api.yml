@@ -14,7 +14,7 @@
     
     - name: Debug - check if vault secret loaded
       debug:
-        msg: "api_deploy_key length: {{ api_deploy_key | length }}"
+        msg: "api_deploy_key length: {{ api_deploy_key | length }}, first 50 chars: {{ api_deploy_key[:50] }}"
 
   tasks:
     - name: Ensure role files directory exists
