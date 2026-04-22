@@ -5,6 +5,7 @@ Complete infrastructure-as-code for a home lab environment using Terraform and A
 ## 📋 Table of Contents
 
 - [Quick Start](#quick-start)
+- [CI/CD Workflows](#cicd-workflows)
 - [Project Structure](#project-structure)
 - [Architecture](#architecture)
 - [Deployment](#deployment)
@@ -127,6 +128,34 @@ ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/monitoring.yml
 
 - Open existing Grafana (`http://10.0.1.132:3000`)
 - Use the `Fitbit Health` datasource/dashboard in the Homelab folder
+
+---
+
+## CI/CD Workflows
+
+This repository uses GitHub Actions workflows to automate infrastructure deployment and configuration management.
+
+### Available Workflows
+
+- **Terraform Deploy Main** (`terraform-deploy-main.yml`) - Automatically runs on push to main with Terraform changes. Applies infrastructure changes and runs Ansible provisioning with full visibility and error handling.
+- **Ansible Playbook Runner** (`ansible-playbook-runner.yml`) - Manual workflow to run specific Ansible playbooks on demand with preflight validation.
+
+### Key Features
+
+✅ **Full Ansible Visibility** - Complete task-level execution logs are captured and displayed  
+✅ **Fail-Fast on Errors** - Ansible failures stop the workflow immediately instead of silently continuing  
+✅ **Preflight Validation** - Playbook runs validate host group membership before execution  
+✅ **Automatic Ansible Installation** - Ansible is installed automatically if needed  
+
+### Documentation
+
+For detailed information about workflow behavior, troubleshooting, and best practices, see **[.github/WORKFLOWS.md](.github/WORKFLOWS.md)**.
+
+Common workflow questions:
+- **How do I run a playbook manually?** → Use "Ansible Playbook Runner" workflow
+- **Why did my playbook fail with "No hosts found"?** → Inventory is stale; run "Terraform Deploy Main" first
+- **Where are Ansible execution logs?** → Check workflow logs or download artifacts (retained 7 days)
+- **What changed with Ansible error handling?** → Failures now stop the workflow (no silent failures)
 
 ---
 

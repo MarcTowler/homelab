@@ -1,4 +1,4 @@
-name: Ansible Playbook Runner
+﻿name: Ansible Playbook Runner
 
 on:
   workflow_dispatch:
@@ -172,6 +172,26 @@ jobs:
           echo "Requested selector: ${{ steps.resolve.outputs.selector }}"
           echo "Resolved playbook: ${{ steps.resolve.outputs.playbook_path }}"
           echo "Allowed selectors: ${{ steps.resolve.outputs.allowlist }}"
+
+      - name: Preflight - Validate host resolution
+        run: |
+          set -euo pipefail
+
+          HOST_COUNT=$(ansible-playbook \
+            -i ansible/inventory/hosts.yml \
+            "${{ steps.resolve.outputs.playbook_path }}" \
+            --list-hosts \
+            --vault-password-file "${{ steps.vault.outputs.vault_file }}" 2>/dev/null | \
+            grep -E '^\\s+' | wc -l)
+
+          if [ "$HOST_COUNT" -eq 0 ]; then
+            echo "❌ ERROR: No hosts found for playbook '${{ steps.resolve.outputs.selector }}'"
+            echo "Check:"
+            echo "  1. Is inventory up to date? (Run 'Terraform Deploy Main' first)"
+            echo "  2. Does the playbook target a host group in ansible/inventory/hosts.yml?"
+            exit 1
+          fi
+          echo "✅ Found $HOST_COUNT hosts for playbook '${{ steps.resolve.outputs.selector }}'"
 
       - name: Ensure Ansible is available
         run: |

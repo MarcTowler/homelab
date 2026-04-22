@@ -98,6 +98,58 @@ jobs:
       - name: Terraform validate
         run: terraform validate -no-color
 
+      - name: Prepare vault password file
+        id: vault
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${ANSIBLE_VAULT_PASSWORD}" ]]; then
+            echo "::error::Missing required secret: ANSIBLE_VAULT_PASSWORD"
+            exit 1
+          fi
+
+          vault_file="$(mktemp)"
+          chmod 600 "${vault_file}"
+          printf '%s' "${ANSIBLE_VAULT_PASSWORD}" > "${vault_file}"
+          echo "vault_file=${vault_file}" >> "${GITHUB_OUTPUT}"
+
+      - name: Ensure Ansible is available
+        run: |
+          set -euo pipefail
+
+          if command -v ansible-playbook >/dev/null 2>&1 && command -v ansible-galaxy >/dev/null 2>&1; then
+            ansible-playbook --version
+            exit 0
+          fi
+
+          if ! command -v python3 >/dev/null 2>&1; then
+            echo "::error::python3 is required to install ansible-core on this runner."
+            exit 1
+          fi
+
+          python3 -m ensurepip --upgrade || true
+          python3 -m pip install --user --upgrade pip setuptools wheel
+          python3 -m pip install --user "ansible-core>=2.16,<2.19"
+          echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+
+      - name: Install Ansible collections
+        env:
+          ANSIBLE_COLLECTIONS_PATHS: ${{ github.workspace }}/.ansible/collections
+        run: |
+          set -euo pipefail
+          if [[ ! -f "ansible/requirements.yml" ]]; then
+            echo "::warning::ansible/requirements.yml not found, skipping collection installation"
+            exit 0
+          fi
+          ansible-galaxy collection install -r ansible/requirements.yml -p "${ANSIBLE_COLLECTIONS_PATHS}"
+
+      - name: Export Ansible vault password file
+        run: |
+          export ANSIBLE_VAULT_PASSWORD_FILE="${{ steps.vault.outputs.vault_file }}"
+          echo "ANSIBLE_VAULT_PASSWORD_FILE=${ANSIBLE_VAULT_PASSWORD_FILE}" >> "${GITHUB_ENV}"
+
       - name: Terraform plan
         run: terraform plan -lock-timeout=5m -out=tfplan
 
@@ -110,9 +162,12 @@ jobs:
         if: always()
         run: |
           if [[ -f terraform-apply.log ]]; then
-            awk '/ok=[0-9]+/ && /changed=[0-9]+/ && /failed=[0-9]+/ && /skipped=[0-9]+/ {print}' terraform-apply.log > ansible-apply.log || true
+            # Extract full Ansible execution segment from first PLAY to last PLAY RECAP
+            sed -n '/^PLAY \[/,/^PLAY RECAP/p' terraform-apply.log > ansible-apply.log || true
+            
+            # If no PLAY RECAP found, try alternative pattern and include last 200 lines of plays
             if [[ ! -s ansible-apply.log ]]; then
-              awk '/PLAY RECAP/ {print; recap=1; next} recap && /ok=[0-9]+/ {print}' terraform-apply.log > ansible-apply.log || true
+              awk '/^PLAY / { flag=1 } flag' terraform-apply.log | tail -200 > ansible-apply.log || true
             fi
           else
             echo "terraform-apply.log not found" > ansible-apply.log
@@ -121,11 +176,11 @@ jobs:
       - name: Show Ansible recap output in workflow logs
         if: always()
         run: |
-          echo "::group::Ansible recap from terraform apply"
+          echo "::group::Ansible execution from terraform apply"
           if [[ -s ansible-apply.log ]]; then
             cat ansible-apply.log
           elif [[ -f terraform-apply.log ]]; then
-            echo "No Ansible recap lines (ok/changed/skipped/failed) were found in terraform-apply.log."
+            echo "No Ansible execution output (PLAY headers or PLAY RECAP) found in terraform-apply.log."
           else
             echo "No terraform apply logs were captured."
           fi
@@ -144,4 +199,4 @@ jobs:
 
       - name: Cleanup backend config
         if: always()
-        run: rm -f backend.hcl tfplan ci.auto.tfvars terraform-apply.log ansible-apply.log
+        run: rm -f backend.hcl tfplan ci.auto.tfvars terraform-apply.log ansible-apply.log "${{ steps.vault.outputs.vault_file }}"
