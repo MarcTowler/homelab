@@ -14,7 +14,7 @@
     - name: Create deploy key file
       copy:
         content: "{{ api_deploy_key }}"
-        dest: "../files/{{ deploy_key }}"
+        dest: "../files/api_deploy_key"
 
   roles:
     - role: php-app
