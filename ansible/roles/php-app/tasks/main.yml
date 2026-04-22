@@ -68,7 +68,7 @@
 
 - name: Deploy SSH key for git
   copy:
-    src: "{{ playbook_dir }}/../files/{{ deploy_key }}"
+    src: "{{ deploy_key }}"
     dest: "/root/.ssh/{{ deploy_key }}"
     mode: '0600'
 
