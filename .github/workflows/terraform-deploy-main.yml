@@ -147,6 +147,8 @@ jobs:
         run: terraform plan -lock-timeout=5m -out=tfplan
 
       - name: Terraform apply
+        env:
+          ANSIBLE_COLLECTIONS_PATHS: ${{ github.workspace }}/.ansible/collections
         run: |
           set -o pipefail
           terraform apply -lock-timeout=5m -auto-approve tfplan 2>&1 | tee terraform-apply.log
