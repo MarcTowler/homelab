@@ -20,10 +20,12 @@
         mode: '0755'
     
     - name: Create deploy key file in role directory
-      copy:
-        content: "{{ website_deploy_key }}"
-        dest: "{{ role_files_dir }}/website_deploy_key"
-        mode: '0600'
+      shell: |
+        cat > "{{ role_files_dir }}/website_deploy_key" << 'EOF'
+        {{ website_deploy_key }}
+        EOF
+        chmod 600 "{{ role_files_dir }}/website_deploy_key"
+      changed_when: false
 
 - name: Deploy Website
   hosts: site
