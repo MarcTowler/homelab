@@ -1,31 +1,6 @@
 ---
-# Website Server Playbook (Refactored to use php-app role)
-# Reduced from 134 lines to 24 lines using centralized role
-
-- name: Prepare deploy keys on Ansible controller
-  hosts: localhost
-  gather_facts: no
-  vars:
-    role_files_dir: "{{ playbook_dir }}/../roles/php-app/files"
-  pre_tasks:
-    - name: Load vault secrets
-      include_vars:
-        file: ../inventory/secrets.yml
-
-  tasks:
-    - name: Ensure role files directory exists
-      file:
-        path: "{{ role_files_dir }}"
-        state: directory
-        mode: '0755'
-    
-    - name: Create deploy key file in role directory
-      shell: |
-        cat > "{{ role_files_dir }}/website_deploy_key" << 'EOF'
-        {{ website_deploy_key }}
-        EOF
-        chmod 600 "{{ role_files_dir }}/website_deploy_key"
-      changed_when: false
+# Website Server Playbook
+# Deploy keys are prepared by the workflow from GitHub secrets
 
 - name: Deploy Website
   hosts: site
@@ -40,3 +15,4 @@
         repo_url: git@github.com:ItsLit-Media-and-Development/Website.git
         deploy_key: website_deploy_key
         git_branch: Dev
+
