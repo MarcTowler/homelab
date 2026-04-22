@@ -99,21 +99,17 @@ jobs:
         run: terraform validate -no-color
 
       - name: Prepare vault password file
-        id: vault
         env:
           ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
         run: |
-          set -euo pipefail
-
           if [[ -z "${ANSIBLE_VAULT_PASSWORD}" ]]; then
             echo "::error::Missing required secret: ANSIBLE_VAULT_PASSWORD"
             exit 1
           fi
 
-          vault_file="$(mktemp)"
-          chmod 600 "${vault_file}"
-          printf '%s' "${ANSIBLE_VAULT_PASSWORD}" > "${vault_file}"
-          echo "vault_file=${vault_file}" >> "${GITHUB_OUTPUT}"
+          mkdir -p ansible
+          printf '%s' "${ANSIBLE_VAULT_PASSWORD}" > ansible/.vault_pass
+          chmod 600 ansible/.vault_pass
 
       - name: Ensure Ansible is available
         run: |
@@ -145,10 +141,7 @@ jobs:
           fi
           ansible-galaxy collection install -r ansible/requirements.yml -p "${ANSIBLE_COLLECTIONS_PATHS}"
 
-      - name: Export Ansible vault password file
-        run: |
-          export ANSIBLE_VAULT_PASSWORD_FILE="${{ steps.vault.outputs.vault_file }}"
-          echo "ANSIBLE_VAULT_PASSWORD_FILE=${ANSIBLE_VAULT_PASSWORD_FILE}" >> "${GITHUB_ENV}"
+
 
       - name: Terraform plan
         run: terraform plan -lock-timeout=5m -out=tfplan
@@ -199,4 +192,4 @@ jobs:
 
       - name: Cleanup backend config
         if: always()
-        run: rm -f backend.hcl tfplan ci.auto.tfvars terraform-apply.log ansible-apply.log "${{ steps.vault.outputs.vault_file }}"
+        run: rm -f backend.hcl tfplan ci.auto.tfvars terraform-apply.log ansible-apply.log ansible/.vault_pass
