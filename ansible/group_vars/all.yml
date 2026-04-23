@@ -71,6 +71,10 @@ php_config:
   upload_max_filesize: "100M"
   post_max_size: "100M"
 
+# PHP Application Tokens (passed from Terraform/GitHub Secrets)
+php_token: "{{ php_token | default('') }}"
+php_test_token: "{{ php_test_token | default('') }}"
+
 # ----------------------------------------------------------------------------
 # BASE SYSTEM CONFIGURATION
 # ----------------------------------------------------------------------------

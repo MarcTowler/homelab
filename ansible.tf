@@ -199,7 +199,7 @@ resource "null_resource" "run_ansible" {
   }
 
   provisioner "local-exec" {
-    command     = "bash -c 'set -o pipefail; ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/site.yml'"
+    command     = "bash -c 'set -o pipefail; ansible-playbook -i ansible/inventory/hosts.yml -e php_token=\"${var.php_token}\" -e php_test_token=\"${var.php_test_token}\" ansible/playbooks/site.yml'"
     working_dir = path.module
 
     environment = {
