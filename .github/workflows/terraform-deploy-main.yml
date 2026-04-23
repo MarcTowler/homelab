@@ -143,29 +143,29 @@ jobs:
 
 
 
-       - name: Prepare application deploy key files
-         env:
-           API_DEPLOY_KEY: ${{ secrets.API_DEPLOY_KEY }}
-           GAPI_DEPLOY_KEY: ${{ secrets.GAPI_DEPLOY_KEY }}
-           WEBSITE_DEPLOY_KEY: ${{ secrets.WEBSITE_DEPLOY_KEY }}
-         run: |
-           set -euo pipefail
+      - name: Prepare application deploy key files
+        env:
+          API_DEPLOY_KEY: ${{ secrets.API_DEPLOY_KEY }}
+          GAPI_DEPLOY_KEY: ${{ secrets.GAPI_DEPLOY_KEY }}
+          WEBSITE_DEPLOY_KEY: ${{ secrets.WEBSITE_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
 
-           mkdir -p ansible/roles/php-app/files
+          mkdir -p ansible/roles/php-app/files
 
-           write_key() {
-             local key_name="$1"
-             local key_value="$2"
-             if [[ -n "${key_value}" ]]; then
-               local key_path="ansible/roles/php-app/files/${key_name}"
-               printf '%s\n' "${key_value}" | tr -d '\r' > "${key_path}"
-               chmod 600 "${key_path}"
-             fi
-           }
+          write_key() {
+            local key_name="$1"
+            local key_value="$2"
+            if [[ -n "${key_value}" ]]; then
+              local key_path="ansible/roles/php-app/files/${key_name}"
+              printf '%s\n' "${key_value}" | tr -d '\r' > "${key_path}"
+              chmod 600 "${key_path}"
+            fi
+          }
 
-           write_key "api_deploy_key" "${API_DEPLOY_KEY}"
-           write_key "gapi_deploy_key" "${GAPI_DEPLOY_KEY}"
-           write_key "website_deploy_key" "${WEBSITE_DEPLOY_KEY}"
+          write_key "api_deploy_key" "${API_DEPLOY_KEY}"
+          write_key "gapi_deploy_key" "${GAPI_DEPLOY_KEY}"
+          write_key "website_deploy_key" "${WEBSITE_DEPLOY_KEY}"
 
       - name: Terraform plan
         run: terraform plan -lock-timeout=5m -out=tfplan
