@@ -45,8 +45,6 @@ jobs:
       TF_VAR_cloudflare_dns_token: ${{ secrets.TF_VAR_CLOUDFLARE_DNS_TOKEN }}
       TF_VAR_acme_email: ${{ secrets.TF_VAR_ACME_EMAIL }}
       TF_VAR_ssh_public_key: ${{ secrets.TF_VAR_SSH_PUBLIC_KEY }}
-      TF_VAR_php_token: ${{ secrets.TF_VAR_PHP_TOKEN }}
-      TF_VAR_php_test_token: ${{ secrets.TF_VAR_PHP_TEST_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

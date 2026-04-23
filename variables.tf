@@ -228,16 +228,3 @@ variable "acme_email" {
   description = "Email address for ACME account registration"
   type        = string
 }
-
-# PHP Application Configuration
-variable "php_token" {
-  description = "PHP application authentication token"
-  type        = string
-  sensitive   = true
-}
-
-variable "php_test_token" {
-  description = "PHP application test token"
-  type        = string
-  sensitive   = true
-}
