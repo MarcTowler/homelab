@@ -98,3 +98,12 @@ ssh_port: 22
 
 # Monitoring (optional)
 enable_monitoring: false
+
+# ============================================================================
+# VAULT SECRETS - Loaded from encrypted inventory file
+# ============================================================================
+# The following variables are automatically loaded from ansible/inventory/secrets.yml
+# which is AES256 vault-encrypted. Ansible decrypts it using ANSIBLE_VAULT_PASSWORD_FILE.
+# This includes: php_token, php_test_token, and other sensitive credentials.
+# NOTE: Variables are injected into the Ansible namespace automatically during playbook execution.
+
