@@ -177,18 +177,27 @@ jobs:
         run: |
           set -euo pipefail
 
+          # List hosts without vault-password-file (not needed for --list-hosts)
+          # Skip first 2 lines of output (Ansible header) and count indented host lines
           HOST_COUNT=$(ansible-playbook \
             -i ansible/inventory/hosts.yml \
             "${{ steps.resolve.outputs.playbook_path }}" \
-            --list-hosts \
-            --vault-password-file "${{ steps.vault.outputs.vault_file }}" 2>/dev/null | \
-            grep -E '^\\s+' | wc -l)
+            --list-hosts | \
+            tail -n +3 | \
+            grep -E '^\s+\S+' | wc -l)
 
           if [ "$HOST_COUNT" -eq 0 ]; then
             echo "❌ ERROR: No hosts found for playbook '${{ steps.resolve.outputs.selector }}'"
-            echo "Check:"
-            echo "  1. Is inventory up to date? (Run 'Terraform Deploy Main' first)"
-            echo "  2. Does the playbook target a host group in ansible/inventory/hosts.yml?"
+            echo ""
+            echo "Ansible output:"
+            ansible-playbook \
+              -i ansible/inventory/hosts.yml \
+              "${{ steps.resolve.outputs.playbook_path }}" \
+              --list-hosts
+            echo ""
+            echo "Verify:"
+            echo "  1. Does the playbook target a valid host group?"
+            echo "  2. Does that host group exist in ansible/inventory/hosts.yml?"
             exit 1
           fi
           echo "✅ Found $HOST_COUNT hosts for playbook '${{ steps.resolve.outputs.selector }}'"
