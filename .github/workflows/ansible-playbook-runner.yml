@@ -196,12 +196,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          # List hosts without vault-password-file (not needed for --list-hosts)
+          # List hosts without vault (not needed for --list-hosts)
+          # Use --vault-id off to explicitly disable vault password prompts
           # Skip first 2 lines of output (Ansible header) and count indented host lines
           HOST_COUNT=$(ansible-playbook \
             -i ansible/inventory/hosts.yml \
             "${{ steps.resolve.outputs.playbook_path }}" \
-            --list-hosts | \
+            --list-hosts \
+            --vault-id off 2>&1 | \
             tail -n +3 | \
             grep -E '^\s+\S+' | wc -l)
 
@@ -212,7 +214,8 @@ jobs:
             ansible-playbook \
               -i ansible/inventory/hosts.yml \
               "${{ steps.resolve.outputs.playbook_path }}" \
-              --list-hosts
+              --list-hosts \
+              --vault-id off
             echo ""
             echo "Verify:"
             echo "  1. Does the playbook target a valid host group?"
