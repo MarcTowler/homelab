@@ -62,24 +62,59 @@
         path: "{{ fitbit_stack_home }}/tokens/fitbit.token"
       register: fitbit_token_file
 
-    - name: Start Fitbit fetch container when token file is present
+    - name: Initialize Fitbit token from vault when missing
+      block:
+        - name: Create initial Fitbit token file from vault
+          copy:
+            content: "{{ vault_fitbit_refresh_token }}"
+            dest: "{{ fitbit_stack_home }}/tokens/fitbit.token"
+            owner: "1000"
+            group: "1000"
+            mode: "0600"
+          when: vault_fitbit_refresh_token is defined and vault_fitbit_refresh_token != ""
+
+        - name: Display bootstrap prompt if vault token not configured
+          debug:
+            msg: |
+              ⚠️  FITBIT TOKEN BOOTSTRAP REQUIRED
+              
+              The vault_fitbit_refresh_token variable is not configured.
+              To complete automated setup:
+              
+              1. Obtain your Fitbit refresh token:
+                 - Run locally: docker compose run --rm fitbit-fetch-data
+                 - Follow the OAuth flow
+                 - Copy the refresh token provided
+              
+              2. Add to your secrets.yml vault:
+                 vault_fitbit_refresh_token: "YOUR_REFRESH_TOKEN_HERE"
+              
+              3. Re-run this playbook to complete setup
+              
+              For now, the fitbit-fetch-data container will start once the token is provided.
+          when: vault_fitbit_refresh_token is not defined or vault_fitbit_refresh_token == ""
+      
+      when: not fitbit_token_file.stat.exists
+
+    - name: Start Fitbit fetch container
       shell: |
         cd {{ fitbit_stack_home }}
         docker compose up -d fitbit-fetch-data
       args:
         executable: /bin/bash
-      when: fitbit_token_file.stat.exists
+      register: fitbit_startup
+      retries: 3
+      delay: 5
+      until: fitbit_startup is succeeded
 
-    - name: Print manual bootstrap command when token file is missing
-      debug:
-        msg: |
-          Fitbit token bootstrap is pending.
-          1. SSH to fitbit host
-          2. cd {{ fitbit_stack_home }}
-          3. docker compose run --rm fitbit-fetch-data
-          4. Paste refresh token when prompted
-          5. docker compose up -d
-      when: not fitbit_token_file.stat.exists
+    - name: Monitor initial Fitbit fetch
+      shell: |
+        docker logs fitbit-fetch-data --tail 20
+      register: fitbit_logs
+      retries: 10
+      delay: 6
+      until: "'Successfully updated HeartRate' in fitbit_logs.stdout or 'No data' in fitbit_logs.stdout"
+      when: fitbit_token_file.stat.exists or (vault_fitbit_refresh_token is defined and vault_fitbit_refresh_token != "")
 
     - name: Verify InfluxDB API is reachable
       uri:
