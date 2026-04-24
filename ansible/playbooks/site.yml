@@ -1,5 +1,16 @@
 ---
 # Main provisioning playbook
+
+# Pre-task to load vault secrets before any plays execute
+- name: Load vault secrets from encrypted inventory
+  hosts: all
+  gather_facts: no
+  pre_tasks:
+    - name: Load encrypted vault secrets into Ansible namespace
+      include_vars:
+        file: "{{ playbook_dir }}/../inventory/secrets.yml"
+      run_once: yes
+
 - name: Configure base system
   import_playbook: ../roles/base/main.yml
 
