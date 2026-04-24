@@ -173,6 +173,25 @@ jobs:
           echo "Resolved playbook: ${{ steps.resolve.outputs.playbook_path }}"
           echo "Allowed selectors: ${{ steps.resolve.outputs.allowlist }}"
 
+      - name: Ensure Ansible is available
+        run: |
+          set -euo pipefail
+
+          if command -v ansible-playbook >/dev/null 2>&1 && command -v ansible-galaxy >/dev/null 2>&1; then
+            ansible-playbook --version
+            exit 0
+          fi
+
+          if ! command -v python3 >/dev/null 2>&1; then
+            echo "::error::python3 is required to install ansible-core on this runner."
+            exit 1
+          fi
+
+          python3 -m ensurepip --upgrade || true
+          python3 -m pip install --user --upgrade pip setuptools wheel
+          python3 -m pip install --user "ansible-core>=2.16,<2.19"
+          echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+
       - name: Preflight - Validate host resolution
         run: |
           set -euo pipefail
@@ -201,25 +220,6 @@ jobs:
             exit 1
           fi
           echo "✅ Found $HOST_COUNT hosts for playbook '${{ steps.resolve.outputs.selector }}'"
-
-      - name: Ensure Ansible is available
-        run: |
-          set -euo pipefail
-
-          if command -v ansible-playbook >/dev/null 2>&1 && command -v ansible-galaxy >/dev/null 2>&1; then
-            ansible-playbook --version
-            exit 0
-          fi
-
-          if ! command -v python3 >/dev/null 2>&1; then
-            echo "::error::python3 is required to install ansible-core on this runner."
-            exit 1
-          fi
-
-          python3 -m ensurepip --upgrade || true
-          python3 -m pip install --user --upgrade pip setuptools wheel
-          python3 -m pip install --user "ansible-core>=2.16,<2.19"
-          echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
 
       - name: Install Ansible collections
         env:
