@@ -220,8 +220,8 @@ To see the full list of available playbooks, check the workflow run details or l
 4. **Prepare SSH private key** - Sets up SSH authentication for Ansible hosts
 5. **Prepare application deploy key files** - Writes deploy keys to `ansible/files/` directory
 6. **Show selection** - Displays the selected playbook and resolved inventory
-7. **Preflight - Validate host resolution** - **Checks that the playbook targets at least one host**
-8. **Ensure Ansible is available** - Installs Ansible if needed
+7. **Ensure Ansible is available** - Installs Ansible if needed
+8. **Preflight - Validate host resolution** - **Checks that the playbook targets at least one host**
 9. **Install Ansible collections** - Installs required collections from `ansible/requirements.yml`
 10. **Run selected playbook** - Executes the Ansible playbook
 11. **Cleanup vault password file** - Removes vault password file

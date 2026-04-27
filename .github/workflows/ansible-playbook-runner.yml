@@ -196,26 +196,32 @@ jobs:
         run: |
           set -euo pipefail
 
-          # List hosts without vault (not needed for --list-hosts)
-          # Use --vault-id off to explicitly disable vault password prompts
-          # Skip first 2 lines of output (Ansible header) and count indented host lines
-          HOST_COUNT=$(ansible-playbook \
+          # Resolve hosts without requiring vault decryption.
+          # Capture output and status explicitly to avoid brittle pipeline parsing.
+          set +e
+          LIST_HOSTS_OUTPUT="$(ansible-playbook \
             -i ansible/inventory/hosts.yml \
             "${{ steps.resolve.outputs.playbook_path }}" \
             --list-hosts \
-            --vault-id off 2>&1 | \
-            tail -n +3 | \
-            grep -E '^\s+\S+' | wc -l)
+            --vault-id off 2>&1)"
+          LIST_HOSTS_EXIT=$?
+          set -e
+
+          if [[ "${LIST_HOSTS_EXIT}" -ne 0 ]]; then
+            echo "❌ ERROR: Failed to resolve hosts for playbook '${{ steps.resolve.outputs.selector }}'"
+            echo ""
+            echo "Ansible output:"
+            echo "${LIST_HOSTS_OUTPUT}"
+            exit 1
+          fi
+
+          HOST_COUNT="$(printf '%s\n' "${LIST_HOSTS_OUTPUT}" | awk 'match($0, /hosts \(([0-9]+)\):/, m) { count += m[1] } END { print count + 0 }')"
 
           if [ "$HOST_COUNT" -eq 0 ]; then
             echo "❌ ERROR: No hosts found for playbook '${{ steps.resolve.outputs.selector }}'"
             echo ""
             echo "Ansible output:"
-            ansible-playbook \
-              -i ansible/inventory/hosts.yml \
-              "${{ steps.resolve.outputs.playbook_path }}" \
-              --list-hosts \
-              --vault-id off
+            echo "${LIST_HOSTS_OUTPUT}"
             echo ""
             echo "Verify:"
             echo "  1. Does the playbook target a valid host group?"
