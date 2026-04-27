@@ -192,8 +192,20 @@ jobs:
           python3 -m pip install --user "ansible-core>=2.16,<2.19"
           echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
 
+      - name: Install Ansible collections
+        env:
+          ANSIBLE_COLLECTIONS_PATHS: ${{ github.workspace }}/.ansible/collections
+        run: |
+          set -euo pipefail
+          if [[ ! -f "ansible/requirements.yml" ]]; then
+            echo "::error::ansible/requirements.yml not found"
+            exit 1
+          fi
+          ansible-galaxy collection install -r ansible/requirements.yml -p "${ANSIBLE_COLLECTIONS_PATHS}"
+
       - name: Preflight - Validate host resolution
         env:
+          ANSIBLE_COLLECTIONS_PATHS: ${{ github.workspace }}/.ansible/collections
           ANSIBLE_VAULT_PASSWORD_FILE: ${{ steps.vault.outputs.vault_file }}
         run: |
           set -euo pipefail
@@ -231,17 +243,6 @@ jobs:
             exit 1
           fi
           echo "✅ Found $HOST_COUNT hosts for playbook '${{ steps.resolve.outputs.selector }}'"
-
-      - name: Install Ansible collections
-        env:
-          ANSIBLE_COLLECTIONS_PATHS: ${{ github.workspace }}/.ansible/collections
-        run: |
-          set -euo pipefail
-          if [[ ! -f "ansible/requirements.yml" ]]; then
-            echo "::error::ansible/requirements.yml not found"
-            exit 1
-          fi
-          ansible-galaxy collection install -r ansible/requirements.yml -p "${ANSIBLE_COLLECTIONS_PATHS}"
 
       - name: Run selected playbook
         env:

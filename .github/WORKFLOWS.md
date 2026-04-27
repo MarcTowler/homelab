@@ -221,8 +221,8 @@ To see the full list of available playbooks, check the workflow run details or l
 5. **Prepare application deploy key files** - Writes deploy keys to `ansible/files/` directory
 6. **Show selection** - Displays the selected playbook and resolved inventory
 7. **Ensure Ansible is available** - Installs Ansible if needed
-8. **Preflight - Validate host resolution** - **Checks that the playbook targets at least one host**
-9. **Install Ansible collections** - Installs required collections from `ansible/requirements.yml`
+8. **Install Ansible collections** - Installs required collections from `ansible/requirements.yml`
+9. **Preflight - Validate host resolution** - **Checks that the playbook targets at least one host**
 10. **Run selected playbook** - Executes the Ansible playbook
 11. **Cleanup vault password file** - Removes vault password file
 12. **Cleanup SSH private key file** - Removes SSH key file (if created from secret)
@@ -236,6 +236,13 @@ To see the full list of available playbooks, check the workflow run details or l
   2. Check that the host group exists in `ansible/inventory/hosts.yml`
   3. If the inventory is outdated, run the **Terraform Deploy Main** workflow to regenerate it from current infrastructure
   4. Verify that at least one host matches the group criteria in `ansible.tf`
+
+#### "couldn't resolve module/action" during preflight
+- **Cause:** Required Ansible collections are unavailable to the preflight command
+- **Solution:**
+  1. Ensure the **Install Ansible collections** step ran successfully
+  2. Confirm preflight is using `ANSIBLE_COLLECTIONS_PATHS=${{ github.workspace }}/.ansible/collections`
+  3. Verify required collections exist in `ansible/requirements.yml`
 
 #### "Unsupported playbook selector" error
 - **Cause:** The provided playbook name doesn't exist or doesn't match the allowlist
