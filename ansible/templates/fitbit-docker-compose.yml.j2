@@ -19,8 +19,10 @@ services:
       - INFLUXDB_USERNAME={{ fitbit_influxdb_username }}
       - INFLUXDB_PASSWORD={{ fitbit_influxdb_password }}
       - INFLUXDB_DATABASE={{ fitbit_influxdb_database }}
-      - GOOGLE_CLIENT_ID={{ fitbit_google_client_id }}
-      - GOOGLE_CLIENT_SECRET={{ fitbit_google_client_secret }}
+      - CLIENT_ID={{ fitbit_client_id }}
+      - CLIENT_SECRET={{ fitbit_client_secret }}
+      #- GOOGLE_CLIENT_ID={{ fitbit_google_client_id }}
+      #- GOOGLE_CLIENT_SECRET={{ fitbit_google_client_secret }}
       - DEVICENAME={{ fitbit_device_name }}
       - LOCAL_TIMEZONE={{ fitbit_local_timezone }}
     depends_on:
