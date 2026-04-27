@@ -193,17 +193,19 @@ jobs:
           echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
 
       - name: Preflight - Validate host resolution
+        env:
+          ANSIBLE_VAULT_PASSWORD_FILE: ${{ steps.vault.outputs.vault_file }}
         run: |
           set -euo pipefail
 
-          # Resolve hosts without requiring vault decryption.
+          # Resolve hosts using the vault password file prepared earlier.
           # Capture output and status explicitly to avoid brittle pipeline parsing.
           set +e
           LIST_HOSTS_OUTPUT="$(ansible-playbook \
             -i ansible/inventory/hosts.yml \
             "${{ steps.resolve.outputs.playbook_path }}" \
             --list-hosts \
-            --vault-id off 2>&1)"
+            --vault-password-file "${{ steps.vault.outputs.vault_file }}" 2>&1)"
           LIST_HOSTS_EXIT=$?
           set -e
 
