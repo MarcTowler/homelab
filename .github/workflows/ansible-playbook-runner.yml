@@ -4,15 +4,25 @@ on:
   workflow_dispatch:
     inputs:
       playbook:
-        description: "Playbook selector (basename in ansible/playbooks, e.g. api)"
+        description: "Playbook selector (basename in ansible/playbooks, e.g. api or website)"
         required: true
         type: string
+      allow_full_site:
+        description: "Set true to allow running the full site.yml aggregate playbook when playbook=site"
+        required: false
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       playbook:
-        description: "Playbook selector (basename in ansible/playbooks, e.g. api)"
+        description: "Playbook selector (basename in ansible/playbooks, e.g. api or website)"
         required: true
         type: string
+      allow_full_site:
+        description: "Set true to allow running the full site.yml aggregate playbook when playbook=site"
+        required: false
+        type: boolean
+        default: false
     secrets:
       ANSIBLE_VAULT_PASSWORD:
         required: true
@@ -42,6 +52,7 @@ jobs:
         working-directory: .
     env:
       PLAYBOOK_SELECTOR: ${{ inputs.playbook }}
+      ALLOW_FULL_SITE: ${{ inputs.allow_full_site }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,6 +63,7 @@ jobs:
           set -euo pipefail
 
           selector="${PLAYBOOK_SELECTOR}"
+          allow_full_site="${ALLOW_FULL_SITE:-false}"
           if [[ -z "${selector}" ]]; then
             echo "::error::Missing required input: playbook"
             exit 1
@@ -62,25 +74,45 @@ jobs:
             exit 1
           fi
 
+          case "${allow_full_site,,}" in
+            true|1|yes|y) allow_full_site="true" ;;
+            *) allow_full_site="false" ;;
+          esac
+
+          canonical_selector="${selector}"
+          case "${selector}" in
+            site)
+              if [[ "${allow_full_site}" != "true" ]]; then
+                echo "::error::Selector 'site' runs the full homelab aggregate playbook (site.yml). Use selector 'website' for the website LXC, or set allow_full_site=true to run full site.yml intentionally."
+                exit 1
+              fi
+              ;;
+            website)
+              canonical_selector="website"
+              ;;
+          esac
+
           mapfile -t allowed < <(find ansible/playbooks -maxdepth 1 -type f -name '*.yml' -printf '%f\n' | sed 's/\.yml$//' | sort)
           if [[ ${#allowed[@]} -eq 0 ]]; then
             echo "::error::No playbooks found in ansible/playbooks/"
             exit 1
           fi
 
-          if ! printf '%s\n' "${allowed[@]}" | grep -Fxq "${selector}"; then
+          if ! printf '%s\n' "${allowed[@]}" | grep -Fxq "${canonical_selector}"; then
             echo "::error::Unsupported playbook selector '${selector}'."
             echo "Allowed selectors: $(IFS=,; echo "${allowed[*]}")"
             exit 1
           fi
 
-          resolved_path="ansible/playbooks/${selector}.yml"
+          resolved_path="ansible/playbooks/${canonical_selector}.yml"
           if [[ ! -f "${resolved_path}" ]]; then
             echo "::error::Resolved playbook path not found: ${resolved_path}"
             exit 1
           fi
 
-          echo "selector=${selector}" >> "${GITHUB_OUTPUT}"
+          echo "requested_selector=${selector}" >> "${GITHUB_OUTPUT}"
+          echo "selector=${canonical_selector}" >> "${GITHUB_OUTPUT}"
+          echo "allow_full_site=${allow_full_site}" >> "${GITHUB_OUTPUT}"
           echo "playbook_path=${resolved_path}" >> "${GITHUB_OUTPUT}"
           echo "allowlist=$(IFS=,; echo "${allowed[*]}")" >> "${GITHUB_OUTPUT}"
 
@@ -176,7 +208,9 @@ jobs:
 
       - name: Show selection
         run: |
-          echo "Requested selector: ${{ steps.resolve.outputs.selector }}"
+          echo "Requested selector: ${{ steps.resolve.outputs.requested_selector }}"
+          echo "Canonical selector: ${{ steps.resolve.outputs.selector }}"
+          echo "Full-site opt-in: ${{ steps.resolve.outputs.allow_full_site }}"
           echo "Resolved playbook: ${{ steps.resolve.outputs.playbook_path }}"
           echo "Allowed selectors: ${{ steps.resolve.outputs.allowlist }}"
 

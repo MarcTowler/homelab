@@ -146,8 +146,9 @@ Allows manual execution of a specific Ansible playbook against the current inven
 #### Via GitHub UI
 1. Go to **Actions** → **Ansible Playbook Runner**
 2. Click **Run workflow**
-3. Enter playbook selector (e.g., `api`, `monitoring`, `site`)
-4. Click **Run workflow**
+3. Enter playbook selector (e.g., `api`, `monitoring`, `website`)
+4. If you intentionally need the full aggregate `site.yml`, set **allow_full_site** to `true`
+5. Click **Run workflow**
 
 #### Via workflow_call (from another workflow)
 ```yaml
@@ -156,6 +157,7 @@ jobs:
     uses: ./.github/workflows/ansible-playbook-runner.yml
     with:
       playbook: api
+      allow_full_site: false
     secrets:
       ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
       ANSIBLE_SSH_PRIVATE_KEY: ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
@@ -195,13 +197,18 @@ The workflow validates playbook names against the allowlist in `ansible/playbook
 
 Common playbooks:
 - `api` - Deploy/configure API service
+- `website` - Deploy/configure website service (targets inventory host/group `site`)
 - `monitoring` - Deploy/configure monitoring stack
-- `site` - Full site provisioning playbook
+- `site` - Full homelab aggregate provisioning playbook (requires explicit `allow_full_site=true`)
 - Others as defined in your `ansible/playbooks/` directory
 
 To see the full list of available playbooks, check the workflow run details or look at filenames in `ansible/playbooks/`.
 
 ### Environment Requirements
+
+**Inputs:**
+- `playbook` (required) - Playbook selector from `ansible/playbooks`
+- `allow_full_site` (optional, default `false`) - Must be `true` to run selector `site`
 
 **Secrets (required):**
 - `ANSIBLE_VAULT_PASSWORD` - Ansible vault password
@@ -215,7 +222,7 @@ To see the full list of available playbooks, check the workflow run details or l
 ### Workflow Steps (in order)
 
 1. **Checkout** - Retrieves the repository code
-2. **Resolve and validate playbook selector** - Validates playbook name and resolves to file path
+2. **Resolve and validate playbook selector** - Validates selector, applies `site` guardrail, and resolves playbook path
 3. **Prepare vault password file** - Creates Ansible vault password file from secret
 4. **Prepare SSH private key** - Sets up SSH authentication for Ansible hosts
 5. **Prepare application deploy key files** - Optionally writes override keys to `ansible/playbooks/files/` and `ansible/roles/php-app/files/`
@@ -250,6 +257,12 @@ To see the full list of available playbooks, check the workflow run details or l
   1. Check the error message for the list of allowed playbook selectors
   2. Verify the playbook file exists at `ansible/playbooks/{name}.yml`
   3. Use the exact filename without the `.yml` extension
+
+#### "Selector 'site' runs the full homelab aggregate playbook" error
+- **Cause:** `site` was selected without explicit full-site opt-in
+- **Solution:**
+  1. For website-only deployment, use selector `website` (it already targets host/group `site`)
+  2. Only when you intentionally want the aggregate run, set `allow_full_site=true`
 
 #### "UNREACHABLE" errors during playbook run
 - **Cause:** Ansible cannot connect to target hosts
