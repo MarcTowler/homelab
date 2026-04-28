@@ -17,10 +17,21 @@
     - name: Load vault secrets
       include_vars:
         file: ../inventory/secrets.yml
+    - name: Ensure controller deploy key directory exists
+      file:
+        path: "{{ playbook_dir }}/files"
+        state: directory
+        mode: '0700'
+      delegate_to: localhost
+      become: false
     - name: Create deploy key file
       copy:
-        content: "{{ litbot_deploy_key }}"
-        dest: "{{ playbook_dir }}/../files/litbot_deploy_key"
+        content: "{{ (litbot_deploy_key | replace('\r', '')) ~ '\n' }}"
+        dest: "{{ playbook_dir }}/files/litbot_deploy_key"
+        mode: '0600'
+      delegate_to: localhost
+      become: false
+      no_log: true
 
     # System preparation
     - include_tasks: ../tasks/common-setup.yml
@@ -85,7 +96,7 @@
 
     - name: Copy GitHub Deploy Key
       copy:
-        src: "{{ playbook_dir }}/../files/litbot_deploy_key"
+        src: "{{ playbook_dir }}/files/litbot_deploy_key"
         dest: "/root/.ssh/litbot_deploy_key"
         mode: '0600'
 

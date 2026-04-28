@@ -139,15 +139,19 @@ jobs:
         run: |
           set -euo pipefail
 
-          mkdir -p ansible/files
+          mkdir -p ansible/playbooks/files ansible/roles/php-app/files
 
           write_key() {
             local key_name="$1"
             local key_value="$2"
             if [[ -n "${key_value}" ]]; then
-              local key_path="ansible/files/${key_name}"
-              printf '%s\n' "${key_value}" | tr -d '\r' > "${key_path}"
-              chmod 600 "${key_path}"
+              for key_path in \
+                "ansible/playbooks/files/${key_name}" \
+                "ansible/roles/php-app/files/${key_name}"
+              do
+                printf '%s\n' "${key_value}" | tr -d '\r' > "${key_path}"
+                chmod 600 "${key_path}"
+              done
             fi
           }
 
@@ -155,16 +159,19 @@ jobs:
           write_key "gapi_deploy_key" "${GAPI_DEPLOY_KEY}"
           write_key "website_deploy_key" "${WEBSITE_DEPLOY_KEY}"
 
-          required_deploy_key=""
+          required_deploy_key_name=""
           case "${{ steps.resolve.outputs.selector }}" in
-            api) required_deploy_key="ansible/files/api_deploy_key" ;;
-            gapi) required_deploy_key="ansible/files/gapi_deploy_key" ;;
-            website) required_deploy_key="ansible/files/website_deploy_key" ;;
+            api) required_deploy_key_name="api_deploy_key" ;;
+            gapi) required_deploy_key_name="gapi_deploy_key" ;;
+            website) required_deploy_key_name="website_deploy_key" ;;
           esac
 
-          if [[ -n "${required_deploy_key}" && ! -s "${required_deploy_key}" ]]; then
-            echo "::error::Missing deploy key for '${{ steps.resolve.outputs.selector }}'. Set the matching repository secret (API_DEPLOY_KEY, GAPI_DEPLOY_KEY, or WEBSITE_DEPLOY_KEY)."
-            exit 1
+          if [[ -n "${required_deploy_key_name}" ]]; then
+            if [[ -s "ansible/playbooks/files/${required_deploy_key_name}" || -s "ansible/roles/php-app/files/${required_deploy_key_name}" ]]; then
+              echo "Using workflow-provided deploy key for '${{ steps.resolve.outputs.selector }}'."
+            else
+              echo "::notice::No workflow secret provided for '${{ steps.resolve.outputs.selector }}'; playbook will source '${required_deploy_key_name}' from ansible vault."
+            fi
           fi
 
       - name: Show selection
