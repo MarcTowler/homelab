@@ -6,7 +6,7 @@
 #   app_name:    Name of the application (e.g., "api", "website", "gapi")
 #   app_root:    Root directory path (e.g., "/var/www/api")
 #   repo_url:    Git repository URL
-#   deploy_key:  Name of deploy key file in ansible/files/
+#   deploy_key:  Deploy key variable/file name (e.g., api_deploy_key)
 #
 # Example usage:
 #   roles:
@@ -65,6 +65,55 @@
     path: /root/.ssh
     state: directory
     mode: '0700'
+
+- name: Check for existing deploy key file on controller
+  stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ playbook_dir }}/files/{{ deploy_key }}"
+    - "{{ role_path }}/files/{{ deploy_key }}"
+  delegate_to: localhost
+  become: false
+  register: deploy_key_file_stats
+
+- name: Determine whether deploy key file already exists on controller
+  set_fact:
+    deploy_key_file_exists: "{{ (deploy_key_file_stats.results | selectattr('stat.exists', 'equalto', true) | list | length) > 0 }}"
+
+- name: Load vault secrets
+  include_vars:
+    file: "{{ playbook_dir }}/../inventory/secrets.yml"
+  no_log: true
+
+- name: Resolve deploy key value from vault
+  set_fact:
+    vault_deploy_key_value: "{{ lookup('vars', deploy_key, default='') }}"
+  when: not deploy_key_file_exists
+  no_log: true
+
+- name: Fail when deploy key is unavailable
+  fail:
+    msg: "Deploy key '{{ deploy_key }}' was not found in controller files and is missing from ansible/inventory/secrets.yml."
+  when: not deploy_key_file_exists and (vault_deploy_key_value | default('') | trim == '')
+
+- name: Ensure playbook files directory exists on controller
+  file:
+    path: "{{ playbook_dir }}/files"
+    state: directory
+    mode: '0700'
+  delegate_to: localhost
+  become: false
+  when: not deploy_key_file_exists
+
+- name: Materialize deploy key from vault on controller
+  copy:
+    content: "{{ (vault_deploy_key_value | replace('\r', '')) ~ '\n' }}"
+    dest: "{{ playbook_dir }}/files/{{ deploy_key }}"
+    mode: '0600'
+  delegate_to: localhost
+  become: false
+  when: not deploy_key_file_exists
+  no_log: true
 
 - name: Deploy SSH key for git
   copy:

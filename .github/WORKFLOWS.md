@@ -208,9 +208,9 @@ To see the full list of available playbooks, check the workflow run details or l
 
 **Secrets (optional):**
 - `ANSIBLE_SSH_PRIVATE_KEY` - SSH private key for host access (falls back to runner's `~/.ssh/id_ed25519` if not provided)
-- `API_DEPLOY_KEY` - Deploy key for API repository (required for `api` playbook)
-- `GAPI_DEPLOY_KEY` - Deploy key for GAPI repository (required for `gapi` playbook)
-- `WEBSITE_DEPLOY_KEY` - Deploy key for website repository (required for `website` playbook)
+- `API_DEPLOY_KEY` - Optional override deploy key for API repository (`api_deploy_key` is otherwise read from Ansible vault)
+- `GAPI_DEPLOY_KEY` - Optional override deploy key for GAPI repository (`gapi_deploy_key` is otherwise read from Ansible vault)
+- `WEBSITE_DEPLOY_KEY` - Optional override deploy key for website repository (`website_deploy_key` is otherwise read from Ansible vault)
 
 ### Workflow Steps (in order)
 
@@ -218,7 +218,7 @@ To see the full list of available playbooks, check the workflow run details or l
 2. **Resolve and validate playbook selector** - Validates playbook name and resolves to file path
 3. **Prepare vault password file** - Creates Ansible vault password file from secret
 4. **Prepare SSH private key** - Sets up SSH authentication for Ansible hosts
-5. **Prepare application deploy key files** - Writes deploy keys to `ansible/files/` directory
+5. **Prepare application deploy key files** - Optionally writes override keys to `ansible/playbooks/files/` and `ansible/roles/php-app/files/`
 6. **Show selection** - Displays the selected playbook and resolved inventory
 7. **Ensure Ansible is available** - Installs Ansible if needed
 8. **Install Ansible collections** - Installs required collections from `ansible/requirements.yml`
@@ -259,14 +259,25 @@ To see the full list of available playbooks, check the workflow run details or l
   3. Check that hosts allow SSH access (firewall, security groups, etc.)
   4. Run **Terraform Deploy Main** to verify current inventory is correct
 
-#### "Missing deploy key" error
-- **Cause:** A required deploy key secret is not set for the selected playbook
+#### "could not find or access 'api_deploy_key'" (or gapi/website/litbot key variants)
+- **Cause:** Deploy key file was not present in controller search paths and matching vault variable was missing
 - **Solution:**
-  1. Identify which deploy key is required (error message indicates `api`, `gapi`, or `website`)
-  2. Add the corresponding secret to repository settings:
-     - For API: set `API_DEPLOY_KEY`
-     - For GAPI: set `GAPI_DEPLOY_KEY`
-     - For website: set `WEBSITE_DEPLOY_KEY`
+  1. Ensure the deploy key exists in `ansible/inventory/secrets.yml` using matching variable names (`api_deploy_key`, `gapi_deploy_key`, `website_deploy_key`, `litbot_deploy_key`)
+  2. Verify `ANSIBLE_VAULT_PASSWORD` decrypts the current vault file
+  3. Optionally set workflow secrets (`API_DEPLOY_KEY`, `GAPI_DEPLOY_KEY`, `WEBSITE_DEPLOY_KEY`) to override vault values during CI runs
+
+#### "'php_token' is undefined" during site.ini deployment
+- **Cause:** Vault secrets were not loaded into play context before templating `site.ini.j2`
+- **Solution:**
+  1. Ensure `ansible/inventory/secrets.yml` contains `php_token` and `php_test_token`
+  2. Verify `ANSIBLE_VAULT_PASSWORD` is configured and valid
+  3. Re-run the workflow after the role-based vault load fix (current behavior)
+
+#### "Missing deploy key" error
+- **Cause:** Neither a workflow override secret nor the matching vault variable is available for the selected playbook
+- **Solution:**
+  1. Ensure the matching vault variable exists in `ansible/inventory/secrets.yml`
+  2. Optionally provide an override secret in repository settings (`API_DEPLOY_KEY`, `GAPI_DEPLOY_KEY`, `WEBSITE_DEPLOY_KEY`)
   3. Re-run the workflow
 
 #### "Ansible failed" and workflow failed

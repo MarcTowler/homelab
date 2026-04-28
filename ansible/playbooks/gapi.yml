@@ -1,6 +1,6 @@
 ---
 # GAPI Server Playbook
-# Deploy keys are prepared by the workflow from GitHub secrets
+# Deploy keys are loaded from vault (workflow secrets may optionally pre-seed files)
 
 - name: Deploy GAPI Server
   hosts: gapi
