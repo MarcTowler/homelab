@@ -80,10 +80,9 @@
   set_fact:
     deploy_key_file_exists: "{{ (deploy_key_file_stats.results | selectattr('stat.exists', 'equalto', true) | list | length) > 0 }}"
 
-- name: Load vault secrets for deploy key fallback
+- name: Load vault secrets
   include_vars:
     file: "{{ playbook_dir }}/../inventory/secrets.yml"
-  when: not deploy_key_file_exists
   no_log: true
 
 - name: Resolve deploy key value from vault

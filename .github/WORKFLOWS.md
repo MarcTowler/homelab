@@ -266,6 +266,13 @@ To see the full list of available playbooks, check the workflow run details or l
   2. Verify `ANSIBLE_VAULT_PASSWORD` decrypts the current vault file
   3. Optionally set workflow secrets (`API_DEPLOY_KEY`, `GAPI_DEPLOY_KEY`, `WEBSITE_DEPLOY_KEY`) to override vault values during CI runs
 
+#### "'php_token' is undefined" during site.ini deployment
+- **Cause:** Vault secrets were not loaded into play context before templating `site.ini.j2`
+- **Solution:**
+  1. Ensure `ansible/inventory/secrets.yml` contains `php_token` and `php_test_token`
+  2. Verify `ANSIBLE_VAULT_PASSWORD` is configured and valid
+  3. Re-run the workflow after the role-based vault load fix (current behavior)
+
 #### "Missing deploy key" error
 - **Cause:** Neither a workflow override secret nor the matching vault variable is available for the selected playbook
 - **Solution:**
