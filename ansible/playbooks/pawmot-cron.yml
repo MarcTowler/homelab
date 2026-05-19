@@ -1,0 +1,96 @@
+---
+- name: Configure pawmot event automation cron jobs
+  hosts: pawmot
+  gather_facts: yes
+  become: yes
+
+  vars_files:
+    - ../inventory/secrets.yml
+
+  vars:
+    pawmot_event_script_dir: /usr/local/bin
+    pawmot_event_env_file: /etc/pawmot-event-sync.env
+    pawmot_event_state_dir: /var/lib/pawmot-event-sync
+    pawmot_event_state_file: "{{ pawmot_event_state_dir }}/week.state"
+    pawmot_event_initial_week: 5
+    # Request #1 (syncLeaderboard) is fixed in the script and always includes season/week JSON.
+    pawmot_tuesday_followup_requests:
+      - { name: "getStandings", method: "GET", endpoint: "/Event/getRK9Standing", include_user_header: true }
+      - { name: "syncPlayers", method: "POST", endpoint: "/Event/syncPlayers", include_user_header: true, include_content_type_header: true }
+      - { name: "loadOldEvents", method: "GET", endpoint: "/Event/loadOldEvents", include_user_header: true }
+      - { name: "loadRoundDataMasters", method: "GET", endpoint: "/Event/loadRoundData/masters", include_user_header: true }
+      - { name: "loadRoundDataSeniors", method: "GET", endpoint: "/Event/loadRoundData/seniors", include_user_header: true }
+      - { name: "loadRoundDataJuniors", method: "GET", endpoint: "/Event/loadRoundData/juniors", include_user_header: true }
+      - { name: "getOldDecklistsMasters", method: "GET", endpoint: "/Event/getOldDecklists/masters", include_user_header: true }
+      - { name: "getOldDecklistsSeniors", method: "GET", endpoint: "/Event/getOldDecklists/seniors", include_user_header: true }
+      - { name: "getOldDecklistsJuniors", method: "GET", endpoint: "/Event/getOldDecklists/juniors", include_user_header: true }
+
+  tasks:
+    - include_tasks: ../tasks/common-setup.yml
+
+    - name: Ensure Tuesday follow-up request count is exactly nine
+      ansible.builtin.assert:
+        that:
+          - pawmot_tuesday_followup_requests | length == 9
+        fail_msg: "Exactly 9 Tuesday follow-up requests must be configured (for 10 total including syncLeaderboard)."
+
+    - name: Ensure pawmot event state directory exists
+      ansible.builtin.file:
+        path: "{{ pawmot_event_state_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Initialize Tuesday week state file if missing
+      ansible.builtin.copy:
+        dest: "{{ pawmot_event_state_file }}"
+        content: "{{ pawmot_event_initial_week }}\n"
+        owner: root
+        group: root
+        mode: "0644"
+        force: false
+
+    - name: Deploy pawmot cron API auth env file
+      ansible.builtin.copy:
+        dest: "{{ pawmot_event_env_file }}"
+        content: |
+          PHP_TEST_TOKEN={{ php_test_token }}
+        owner: root
+        group: root
+        mode: "0600"
+      no_log: true
+
+    - name: Deploy Monday event cron script
+      ansible.builtin.template:
+        src: ../templates/services/pawmot-monday-event.sh.j2
+        dest: "{{ pawmot_event_script_dir }}/pawmot-monday-event.sh"
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Deploy Tuesday event sync cron script
+      ansible.builtin.template:
+        src: ../templates/services/pawmot-tuesday-event-sync.sh.j2
+        dest: "{{ pawmot_event_script_dir }}/pawmot-tuesday-event-sync.sh"
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Configure Monday 06:00 NorthernTCG cron job
+      ansible.builtin.cron:
+        name: "Pawmot Monday NorthernTCG event post"
+        user: root
+        minute: "0"
+        hour: "6"
+        weekday: "1"
+        job: "{{ pawmot_event_script_dir }}/pawmot-monday-event.sh >> /var/log/pawmot-monday-event.log 2>&1"
+
+    - name: Configure Tuesday 05:00 event sync cron job
+      ansible.builtin.cron:
+        name: "Pawmot Tuesday Event sync sequence"
+        user: root
+        minute: "0"
+        hour: "5"
+        weekday: "2"
+        job: "{{ pawmot_event_script_dir }}/pawmot-tuesday-event-sync.sh >> /var/log/pawmot-tuesday-event-sync.log 2>&1"

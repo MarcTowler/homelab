@@ -59,6 +59,9 @@
 - name: Configure game server
   import_playbook: game-server.yml
 
+- name: Configure Pawmot event cron jobs
+  import_playbook: pawmot-cron.yml
+
 - name: Configure homepage server
   import_playbook: homepage.yml
 

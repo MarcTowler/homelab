@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ENV_FILE="{{ pawmot_event_env_file }}"
+STATE_FILE="{{ pawmot_event_state_file }}"
+STATE_DIR="{{ pawmot_event_state_dir }}"
+INITIAL_WEEK="{{ pawmot_event_initial_week }}"
+API_BASE_URL="https://api.itslit.me.uk"
+
+if [[ ! -f "${ENV_FILE}" ]]; then
+  echo "Missing env file: ${ENV_FILE}" >&2
+  exit 1
+fi
+
+# shellcheck source=/dev/null
+source "${ENV_FILE}"
+
+if [[ -z "${PHP_TEST_TOKEN:-}" ]]; then
+  echo "PHP_TEST_TOKEN is not set in ${ENV_FILE}" >&2
+  exit 1
+fi
+
+mkdir -p "${STATE_DIR}"
+
+if [[ ! -f "${STATE_FILE}" ]]; then
+  echo "${INITIAL_WEEK}" > "${STATE_FILE}"
+fi
+
+WEEK="$(tr -d '[:space:]' < "${STATE_FILE}")"
+if [[ ! "${WEEK}" =~ ^[0-9]+$ ]]; then
+  WEEK="${INITIAL_WEEK}"
+fi
+
+run_request() {
+  local method="$1"
+  local endpoint="$2"
+  local include_user_header="$3"
+  local include_content_type_header="$4"
+  local payload="${5:-}"
+
+  local -a args=(--silent --show-error --fail --request "${method}" --url "${API_BASE_URL}${endpoint}" --header "token: ${PHP_TEST_TOKEN}")
+
+  if [[ "${include_user_header}" == "true" ]]; then
+    args+=(--header "user: discord_bot")
+  fi
+
+  if [[ "${include_content_type_header}" == "true" ]]; then
+    args+=(--header "Content-Type: application/json")
+  fi
+
+  if [[ -n "${payload}" ]]; then
+    args+=(--data "${payload}")
+  fi
+
+  curl "${args[@]}"
+}
+
+# Request #1 (required): syncLeaderboard with season/week payload.
+run_request "POST" "/Event/syncLeaderboard" "true" "true" "{\"season\": \"109\", \"week\": ${WEEK}}"
+
+{% for request in pawmot_tuesday_followup_requests %}
+run_request "{{ request.method | default('GET') }}" "{{ request.endpoint }}" "{{ request.include_user_header | default(false) | ternary('true', 'false') }}" "{{ request.include_content_type_header | default(false) | ternary('true', 'false') }}"{% if request.payload is defined %} '{{ request.payload }}'{% endif %}
+{% endfor %}
+
+NEXT_WEEK="$((WEEK + 1))"
+printf '%s\n' "${NEXT_WEEK}" > "${STATE_FILE}"
